@@ -423,14 +423,10 @@ def process_bufr(args, source, f, fn, zip, updated_stations):
     try:
         (h, s) = bufr_decode(f, fn, zip, args)
 
-    # except Exception as e:
-    #     logging.info(f"exception processing {fn} from {zip}: {e}")
-    #
     except BufrUnreadableError as e:
         logging.warning(f"e={e}")
-        return False
+        return True
 
-#    except CodesInternalError  as err:
     except Exception as err:
         traceback.print_exc(file=sys.stderr)
         return False
