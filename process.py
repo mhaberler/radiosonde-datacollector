@@ -930,13 +930,11 @@ def update_station_list(txt_fn):
 
     json_fn = base + ".json"
 
-    #logging.debug(f'base {base} from {txt_fn}, json_fn {json_fn}')
-
     # read the station_list.json file
     # create or update on the fly if needed from station_list.txt (same dir assumed)
     if newer(txt_fn, ".json"):
         # rebuild the json file
-        logging.debug(f'rebuildin {json_fn} from {txt_fn}')
+        logging.debug(f'rebuilding {json_fn} from {txt_fn}')
 
         initialize_stations(txt_fn, json_fn)
         logging.debug(f'rebuilt {json_fn} from {txt_fn}')
@@ -1007,48 +1005,39 @@ def main():
                 source = "gisc"
                 for info in zf.infolist():
                     try:
-                        logging.debug(f"reading: {f} member {info.filename}")
                         data = zf.read(info.filename)
                         fd, path = tempfile.mkstemp(dir=args.tmpdir)
                         os.write(fd, data)
                         os.lseek(fd, 0, os.SEEK_SET)
                         file = os.fdopen(fd)
                     except KeyError:
-                        log.error(
-                            f'ERROR: zip file {f}: no such member {info.filename}')
+                        log.error(f'zip file {f}: no such member {info.filename}')
                         continue
                     else:
-                        logging.debug(
-                            f"processing BUFR: {f} member {info.filename}")
+                        logging.debug(f"processing BUFR: {f} member {info.filename}")
                         success = process_bufr(args, source, file, info.filename, f, updated_stations)
-                        logging.info(f"----- success={success}")
-
                         file.close()
                         os.remove(path)
                         if success and not args.ignore_timestamps:
                             Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
 
-                        # move to failed
+                        # move to failed?
 
         elif ext == '.bin':   # a singlle BUFR file
             source = "gisc"
             file = open(f, 'rb')
             logging.debug(f"processing BUFR: {f}")
-
             success = process_bufr(args, source, file, f, None, updated_stations)
             file.close()
             if success and not args.ignore_timestamps:
                 Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
-            # move to failed
 
         elif ext == '.gz':  # a gzipped netCDF file
             source = "madis"
             logging.debug(f"processing netCDF: {f}")
             success = process_netcdf(args, source, f, None, station_dict, updated_stations)
-            logging.info(f"----- success={success}")
             if success and not args.ignore_timestamps:
                 Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
-            # move to failed? do not think so
 
     # Migrate to all-Geojson
     if updated_stations:
