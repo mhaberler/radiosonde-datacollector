@@ -1,0 +1,1 @@
+/etc/cron.d/radiosonde:57,27 *     * * *     radiosonde   /home/radiosonde/update-madis.sh
