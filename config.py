@@ -1,4 +1,5 @@
 from watchgod import  Change
+import logging
 
 
 watchconfig = [
@@ -7,11 +8,11 @@ watchconfig = [
         "type": "BUFR",
         "trigger": [Change.added,  Change.modified],
         "pattern": r"^.*.zip$",
-        "action": process,
+        "action": "process",
         "action_args":  {
             "loglevel":  logging.DEBUG,
         },
-        "cleanup":  cleanup,
+        "cleanup":  "null",
         "cleanup_every":  3600,
         "cleanup_args":  {
             "todir": "/var/spool/gisc/processed",
@@ -23,11 +24,11 @@ watchconfig = [
         "type": "netCDF",
         "trigger": [Change.added,  Change.modified],
         "pattern": r"^.*.gz$",
-        "action": process,
+        "action": "null",
         "action_args":  {
             "loglevel":  logging.INFO,
         },
-        "cleanup": cleanup,
+        "cleanup": "cleanup",
         "cleanup_every":  3600,
         "cleanup_args":  {
             "todir": "/var/spool/madis-processed",
