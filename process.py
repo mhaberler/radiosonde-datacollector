@@ -445,6 +445,10 @@ def process_bufr(args, source, f, fn, zip, updated_stations):
         traceback.print_exc(file=sys.stderr)
         return False
 
+    except gribapi.errors.UnsupportedEditionError as err:
+        traceback.print_exc(file=sys.stderr)
+        return False
+        
     except gribapi.errors.PrematureEndOfFileError as err:
         traceback.print_exc(file=sys.stderr)
         return False
