@@ -437,21 +437,10 @@ def process_bufr(args, source, f, fn, zip, updated_stations):
     try:
         (h, s) = bufr_decode(f, fn, zip, args)
 
-    except BufrUnreadableError as e:
-        logging.warning(f"e={e}")
+    except Exception as e:
+        logging.warning(f"exception processing {fn} e={e}")
         return False
-
-    except Exception as err:
-        traceback.print_exc(file=sys.stderr)
-        return False
-
-    except gribapi.errors.UnsupportedEditionError as err:
-        traceback.print_exc(file=sys.stderr)
-        return False
-
-    except gribapi.errors.PrematureEndOfFileError as err:
-        traceback.print_exc(file=sys.stderr)
-        return False
+    
     else:
         if bufr_qc(args, h, s, fn, zip):
             return gen_output(args, source, h, s, fn, zip, updated_stations)
@@ -992,7 +981,7 @@ def process_files(args, flist, station_dict, updated_stations):
                             log.error(f'zip file {f}: no such member {info.filename}')
                             continue
                         else:
-                            logging.debug(f"processing BUFR: {f} member {info.filename}")
+                            logging.debug(f"processing BUFR: {f} member {info.filename} size={len(data)}")
                             success = process_bufr(args, source, file, info.filename, f, updated_stations)
                             file.close()
                             os.remove(path)
