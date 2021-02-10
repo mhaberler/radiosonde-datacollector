@@ -448,7 +448,7 @@ def process_bufr(args, source, f, fn, zip, updated_stations):
     except gribapi.errors.UnsupportedEditionError as err:
         traceback.print_exc(file=sys.stderr)
         return False
-        
+
     except gribapi.errors.PrematureEndOfFileError as err:
         traceback.print_exc(file=sys.stderr)
         return False
@@ -1047,19 +1047,19 @@ def move_files(dir, pattern, tsextension, destdir, keeptime=0, simulate=True, tr
         else:
             destpath.mkdir(mode=0o755, parents=True, exist_ok=False)
     spooldir = pathlib.Path(dir)
-    if trace:
-        logging.debug(f"spooldir={spooldir} pattern={pattern} tsextension={tsextension}")
+    # if trace:
+    #     logging.debug(f"spooldir={spooldir} pattern={pattern} tsextension={tsextension}")
     for path in spooldir.glob(pattern):
-        if trace:
-            logging.debug(f"lookat: {path}")
+        # if trace:
+        #     logging.debug(f"lookat: {path}")
         tspath = path.parent / pathlib.Path(path.stem + tsextension)
-        if trace:
-            logging.debug(f"tspath: {tspath}")
+        # if trace:
+        #     logging.debug(f"tspath: {tspath}")
         if tspath.exists():
             tssec = tspath.stat().st_mtime
             age = time.time() - tssec
-            if trace:
-                logging.debug(f"tspath exists, age={age}: {tspath}")
+            # if trace:
+            #     logging.debug(f"tspath exists, age={age}: {tspath}")
             if age > keeptime:
                 dpath = destpath / path.name
                 dtspath = destpath / tspath.name
@@ -1077,9 +1077,9 @@ def move_files(dir, pattern, tsextension, destdir, keeptime=0, simulate=True, tr
 
 def keep_house(args):
 
-    # old scheme - incoming in /var/spool/madis/
-    move_files(SPOOLDIR_MADIS, "*.gz", TS_TIMESTAMP,
-              SPOOLDIR_MADIS+  PROCESSED, keeptime=args.keep_time, trace=args.verbose, simulate=args.sim_housekeep)
+    # # old scheme - incoming in /var/spool/madis/
+    # move_files(SPOOLDIR_MADIS, "*.gz", TS_TIMESTAMP,
+    #           SPOOLDIR_MADIS+  PROCESSED, keeptime=args.keep_time, trace=args.verbose, simulate=args.sim_housekeep)
     # new scheme - incoming -> processed, failed
     move_files(SPOOLDIR_MADIS + INCOMING, "*.gz", TS_PROCESSED,
               SPOOLDIR_MADIS + PROCESSED, keeptime=args.keep_time, trace=args.verbose,simulate=args.sim_housekeep)
