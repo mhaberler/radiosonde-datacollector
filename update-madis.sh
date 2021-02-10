@@ -3,7 +3,7 @@
 
 REMOTE_HOST="madis-data.ncep.noaa.gov"
 REMOTE_DIR=point/raob/netcdf/
-LOCAL_DIR=var/spool/madis
+LOCAL_DIR=/var/spool/madis
 USER=anonymous
 PASS=user@example.com
 MAIL=user@example.com
@@ -14,6 +14,7 @@ err=$(cat "$TMP")
 
 
 if test -n "$err"
+then
       echo "stderr=$err stdout=$var" | mail -s 'madis update failed' $MAIL
 fi
 
