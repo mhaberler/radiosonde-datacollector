@@ -3,8 +3,8 @@ import brotli
 import geojson
 import time, sys, os
 
-SPOOLDIR_MADIS = r'/var/spool/madis/'
-SPOOLDIR_GISC = r'/var/spool/gisc/'
+MADIS = r'/var/www/radiosonde.mah.priv.at/data-dev/madis'
+GISC = r'/var/www/radiosonde.mah.priv.at/data-dev/gisc'
 
 def walkt_tree(directory, pattern):
     nf = 0
@@ -38,7 +38,7 @@ def  main(dirlist):
     print(f"files in total {ntotal}")
 
 if __name__ == "__main__":
-    dirlist = [SPOOLDIR_MADIS, SPOOLDIR_GISC]
-    dirlist = ['gisc/', 'madis/']
+    dirlist = [MADIS, GISC]
+    #dirlist = ['gisc/', 'madis/']
 
     sys.exit(main(dirlist))
