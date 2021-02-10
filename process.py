@@ -1,5 +1,4 @@
 
-from pathlib import Path, PurePath
 from thermodynamics import barometric_equation_inv
 from string import punctuation
 from scipy.interpolate import interp1d
@@ -9,6 +8,7 @@ from netCDF4 import Dataset
 from math import cos, pi, isnan, isinf, atan, sin, cos
 from eccodes import *
 from datetime import datetime, timezone, timedelta, date
+
 import re
 import csv
 import zipfile
@@ -16,6 +16,7 @@ import traceback
 import tempfile
 import sys
 import pytz
+import glob
 import os
 import orjson
 import numpy as np
@@ -27,11 +28,12 @@ import ciso8601
 import brotli
 import argparse
 import time
+import pathlib
+
 import warnings
 #warnings.filterwarnings("ignore")
 
 #np.seterr(all='raise')
-# lifted from https://github.com/tjlang/SkewT
 
 
 earth_avg_radius = 6371008.7714
@@ -40,7 +42,6 @@ mperdeg = 111320.0
 rad = 4.0 * atan(1) / 180.
 
 ASCENT_RATE = 5  # m/s = 300m/min
-
 MAX_FLIGHT_DURATION = 3600 * 5  # rather unlikely
 FAKE_TIME_STEPS = 30  # assume 30sec update interval
 BROTLI_SUMMARY_QUALITY = 11 #7
@@ -48,6 +49,19 @@ BROTLI_SUMMARY_QUALITY = 11 #7
 # drop ascents older than MAX_ASCENT_AGE_IN_SUMMARY from summary
 # the files are kept nevertheless
 MAX_ASCENT_AGE_IN_SUMMARY = 3 * 3600 *24
+
+SPOOLDIR_MADIS = r'/var/spool/madis/'
+SPOOLDIR_GISC = r'/var/spool/gisc/'
+PROCESSED = r'processed'
+FAILED = r'failed'
+INCOMING = r'incoming'
+TS_PROCESSED = ".processed"
+TS_FAILED = ".failed"
+TS_TIMESTAMP = ".timestamp"
+
+# after 3 days move to processed
+KEEP_MADIS_PROCESSED_FILES = 86400 * 3
+
 
 # metpy is terminally slow, so roll our own sans dimension checking
 def geopotential_height_to_height(gph):
@@ -355,9 +369,9 @@ def bufr_qc(args, h, s, fn, zip):
 
 
 def write_geojson(args, source, fc, fn, zip, updated_stations):
-    fc.properties['origin_member'] = PurePath(fn).name
+    fc.properties['origin_member'] = pathlib.PurePath(fn).name
     if zip:
-        fc.properties['origin_archive'] = PurePath(zip).name
+        fc.properties['origin_archive'] = pathlib.PurePath(zip).name
     station_id = fc.properties['station_id']
 
     if args.station and args.station != station_id:
@@ -382,8 +396,8 @@ def write_geojson(args, source, fc, fn, zip, updated_stations):
     dest = f'{args.destdir}/{source}/{cc}/{subdir}/{station_id}_{day}_{time}.geojson{cext}'
     ref = f'{source}/{cc}/{subdir}/{station_id}_{day}_{time}.geojson'
 
-    path = Path(dest).parent.absolute()
-    Path(path).mkdir(parents=True, exist_ok=True)
+    path = pathlib.Path(dest).parent.absolute()
+    pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
     if not fc.is_valid:
                     #print(f"level={n} s={secsIntoFlight:.0f} {height:.1f}m p={pn} lon_t={lon_t} lat_t={lat_t} u={u} v={v} du={du:.1f} dv={dv:.1f} ", file=sys.stderr)
@@ -425,12 +439,15 @@ def process_bufr(args, source, f, fn, zip, updated_stations):
 
     except BufrUnreadableError as e:
         logging.warning(f"e={e}")
-        return True
+        return False
 
     except Exception as err:
         traceback.print_exc(file=sys.stderr)
         return False
 
+    except gribapi.errors.PrematureEndOfFileError as err:
+        traceback.print_exc(file=sys.stderr)
+        return False
     else:
         if bufr_qc(args, h, s, fn, zip):
             return gen_output(args, source, h, s, fn, zip, updated_stations)
@@ -946,6 +963,134 @@ def update_station_list(txt_fn):
     return json_fn, stations
 
 
+def process_files(args, flist, station_dict, updated_stations):
+
+    for f in flist:
+        if not args.ignore_timestamps and not newer(f, TS_PROCESSED):
+            logging.debug(f"skipping: {f}  (processed)")
+            continue
+
+        (fn, ext) = os.path.splitext(f)
+        logging.debug(f"processing: {f} fn={fn} ext={ext}")
+
+        if ext == '.zip':  # a zip archive of BUFR files
+            try:
+                with zipfile.ZipFile(f) as zf:
+                    source = "gisc"
+                    for info in zf.infolist():
+                        try:
+                            data = zf.read(info.filename)
+                            fd, path = tempfile.mkstemp(dir=args.tmpdir)
+                            os.write(fd, data)
+                            os.lseek(fd, 0, os.SEEK_SET)
+                            file = os.fdopen(fd)
+                        except KeyError:
+                            log.error(f'zip file {f}: no such member {info.filename}')
+                            continue
+                        else:
+                            logging.debug(f"processing BUFR: {f} member {info.filename}")
+                            success = process_bufr(args, source, file, info.filename, f, updated_stations)
+                            file.close()
+                            os.remove(path)
+                            if not args.ignore_timestamps:
+                                gen_timestamp(fn, success)
+
+            except zipfile.BadZipFile as e:
+                logging.error(f"{f}: {e}")
+                    # move to failed?
+
+        elif ext == '.bin':   # a singlle BUFR file
+            source = "gisc"
+            file = open(f, 'rb')
+            logging.debug(f"processing BUFR: {f}")
+            success = process_bufr(args, source, file, f, None, updated_stations)
+            file.close()
+            if success and not args.ignore_timestamps:
+                Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
+
+        elif ext == '.gz':  # a gzipped netCDF file
+            source = "madis"
+            logging.debug(f"processing netCDF: {f}")
+            try:
+                success = process_netcdf(args, source, f, None, station_dict, updated_stations)
+
+            except gzip.BadGzipFile as e:
+                logging.error(f"{f}: {e}")
+                # move file to badfiles
+            except OSError as e:
+                logging.error(f"{f}: {e}")
+            else:
+                if not args.ignore_timestamps:
+                    gen_timestamp(fn, success)
+
+
+def gen_timestamp(fn, success):
+    if success:
+        pathlib.Path(fn + TS_PROCESSED).touch(mode=0o777, exist_ok=True)
+    else:
+        pathlib.Path(fn + TS_FAILED).touch(mode=0o777, exist_ok=True)
+
+# catch bad files here: OSError: [Errno -36] NetCDF: Invalid argument: b'inmemory.nc'
+#     raise BadZipFile("File is not a zip file")
+# gzip.BadGzipFile: Not a gzipped file (b'fa')
+
+# the logging is ridiculous.
+def move_files(dir, pattern, tsextension, destdir, keeptime=0, simulate=True, trace=False):
+    destpath = pathlib.Path(destdir)
+    if not destpath.exists():
+        if simulate:
+            logging.debug(f"creating dir: {destpath}")
+        else:
+            destpath.mkdir(mode=0o755, parents=True, exist_ok=False)
+    spooldir = pathlib.Path(dir)
+    if trace:
+        logging.debug(f"spooldir={spooldir} pattern={pattern} tsextension={tsextension}")
+    for path in spooldir.glob(pattern):
+        if trace:
+            logging.debug(f"lookat: {path}")
+        tspath = path.parent / pathlib.Path(path.stem + tsextension)
+        if trace:
+            logging.debug(f"tspath: {tspath}")
+        if tspath.exists():
+            tssec = tspath.stat().st_mtime
+            age = time.time() - tssec
+            if trace:
+                logging.debug(f"tspath exists, age={age}: {tspath}")
+            if age > keeptime:
+                dpath = destpath / path.name
+                dtspath = destpath / tspath.name
+                if simulate:
+                    logging.debug(f"time to move: {path} --> {dpath}")
+                    logging.debug(f"time to move: {tspath} --> {dtspath}")
+                else:
+                    if trace:
+                        logging.debug(f"moving: {path} --> {dpath}")
+                    path.rename(dpath)
+                    if trace:
+                        logging.debug(f"moving: {tspath} --> {dtspath}")
+                    tspath.rename(dtspath)
+
+
+def keep_house(args):
+
+    # old scheme - incoming in /var/spool/madis/
+    move_files(SPOOLDIR_MADIS, "*.gz", TS_TIMESTAMP,
+              SPOOLDIR_MADIS+  PROCESSED, keeptime=args.keep_time, trace=args.verbose, simulate=args.sim_housekeep)
+    # new scheme - incoming -> processed, failed
+    move_files(SPOOLDIR_MADIS + INCOMING, "*.gz", TS_PROCESSED,
+              SPOOLDIR_MADIS + PROCESSED, keeptime=args.keep_time, trace=args.verbose,simulate=args.sim_housekeep)
+    move_files(SPOOLDIR_MADIS + INCOMING, "*.gz", TS_FAILED,
+              SPOOLDIR_MADIS + FAILED, keeptime=0,trace=args.verbose,simulate=args.sim_housekeep)
+
+    # new scheme only
+    move_files(SPOOLDIR_GISC + INCOMING, "*.zip", TS_FAILED, SPOOLDIR_GISC + FAILED,
+                keeptime=0,trace=args.verbose,simulate=args.sim_housekeep)
+    move_files(SPOOLDIR_GISC + INCOMING, "*.zip", TS_TIMESTAMP, SPOOLDIR_GISC + PROCESSED,
+                keeptime=0,trace=args.verbose,simulate=args.sim_housekeep)
+    move_files(SPOOLDIR_GISC + INCOMING, "*.zip", TS_PROCESSED, SPOOLDIR_GISC + PROCESSED,
+               keeptime=0,trace=args.verbose,simulate=args.sim_housekeep)
+
+
 def main():
     parser = argparse.ArgumentParser(description='decode radiosonde BUFR and netCDF reports',
                                      add_help=True)
@@ -958,6 +1103,9 @@ def main():
     parser.add_argument('--geojson', action='store_true', default=False)
     parser.add_argument('--dump-geojson', action='store_true', default=False)
     parser.add_argument('--brotli', action='store_true', default=False)
+    parser.add_argument('--sim-housekeep', action='store_true', default=False,
+                        help="just list what would happen to spooldirs; no input file processing")
+    parser.add_argument('--only-args', action='store_true', default=False)
     parser.add_argument('--summary',
                         action='store',
                         required=True)
@@ -967,10 +1115,23 @@ def main():
                         required=True,
                         help="path to station_list.txt file")
     parser.add_argument('--tmpdir', action='store', default="/tmp")
+#    parser.add_argument('--config', action='store', default="./config.py")
     parser.add_argument('--max-age', action='store', type=int, default=MAX_ASCENT_AGE_IN_SUMMARY)
+    parser.add_argument('--keep-time', action='store', type=int, default=KEEP_MADIS_PROCESSED_FILES,
+                        help="time in secs to retain processed .gz files in MADIS incoming spooldir")
     parser.add_argument('files', nargs='*')
 
     args = parser.parse_args()
+
+    # global config
+    #
+    # # spec = importlib.util.spec_from_file_location("config", "./config.py")
+    # # config = importlib.util.module_from_spec(spec)
+    # # spec.loader.exec_module(config)
+    #
+    # for c in config.watchconfig:
+    #     c['watch'] = RegExpWatcher(root_path=c['dir'], re_files=c['pattern'])
+    #     c['lastcheck'] = now()
 
     level = logging.WARNING
     if args.verbose:
@@ -991,59 +1152,24 @@ def main():
         # try brotlified version
         summary = read_summary(args.summary + ".br")
 
-    for f in args.files:
+    if args.only_args:
+        flist = args.files
+    else:
+        l = list(pathlib.Path(SPOOLDIR_GISC + INCOMING).glob("*.zip"))
+        l.extend(list(pathlib.Path(SPOOLDIR_MADIS + INCOMING).glob("*.gz")))
+        flist = [str(f) for f in l]
 
-        if not args.ignore_timestamps and not newer(f, ".timestamp"):
-            logging.debug(f"skipping: {f}  (timestamp)")
-            continue
+    # work the backlog
+    if not args.sim_housekeep:
+        process_files(args, flist, station_dict, updated_stations)
 
-        (fn, ext) = os.path.splitext(f)
-        logging.debug(f"processing: {f} fn={fn} ext={ext}")
-
-        if ext == '.zip':  # a zip archive of BUFR files
-            with zipfile.ZipFile(f) as zf:
-                source = "gisc"
-                for info in zf.infolist():
-                    try:
-                        data = zf.read(info.filename)
-                        fd, path = tempfile.mkstemp(dir=args.tmpdir)
-                        os.write(fd, data)
-                        os.lseek(fd, 0, os.SEEK_SET)
-                        file = os.fdopen(fd)
-                    except KeyError:
-                        log.error(f'zip file {f}: no such member {info.filename}')
-                        continue
-                    else:
-                        logging.debug(f"processing BUFR: {f} member {info.filename}")
-                        success = process_bufr(args, source, file, info.filename, f, updated_stations)
-                        file.close()
-                        os.remove(path)
-                        if success and not args.ignore_timestamps:
-                            Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
-
-                        # move to failed?
-
-        elif ext == '.bin':   # a singlle BUFR file
-            source = "gisc"
-            file = open(f, 'rb')
-            logging.debug(f"processing BUFR: {f}")
-            success = process_bufr(args, source, file, f, None, updated_stations)
-            file.close()
-            if success and not args.ignore_timestamps:
-                Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
-
-        elif ext == '.gz':  # a gzipped netCDF file
-            source = "madis"
-            logging.debug(f"processing netCDF: {f}")
-            success = process_netcdf(args, source, f, None, station_dict, updated_stations)
-            if success and not args.ignore_timestamps:
-                Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
-
-    # Migrate to all-Geojson
-    if updated_stations:
+    if not args.sim_housekeep and updated_stations:
         logging.debug(f"creating GeoJSON summary: {args.summary}")
         update_geojson_summary(args, station_dict, updated_stations, summary)
 
+    if not args.only_args:
+        logging.debug(f"running housekeeping")
+        keep_house(args)
 
 
 if __name__ == "__main__":
