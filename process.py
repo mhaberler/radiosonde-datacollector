@@ -440,7 +440,7 @@ def process_bufr(args, source, f, fn, zip, updated_stations):
     except Exception as e:
         logging.warning(f"exception processing {fn} e={e}")
         return False
-    
+
     else:
         if bufr_qc(args, h, s, fn, zip):
             return gen_output(args, source, h, s, fn, zip, updated_stations)
@@ -970,6 +970,7 @@ def process_files(args, flist, station_dict, updated_stations):
             try:
                 with zipfile.ZipFile(f) as zf:
                     source = "gisc"
+                    zip_success = True
                     for info in zf.infolist():
                         try:
                             data = zf.read(info.filename)
@@ -983,14 +984,16 @@ def process_files(args, flist, station_dict, updated_stations):
                         else:
                             logging.debug(f"processing BUFR: {f} member {info.filename} size={len(data)}")
                             success = process_bufr(args, source, file, info.filename, f, updated_stations)
+                            zip_success = zip_success and success
                             file.close()
                             os.remove(path)
-                            if not args.ignore_timestamps:
-                                gen_timestamp(fn, success)
+                    if not args.ignore_timestamps:
+                        gen_timestamp(fn, zip_success)
 
             except zipfile.BadZipFile as e:
                 logging.error(f"{f}: {e}")
-                    # move to failed?
+                if not args.ignore_timestamps:
+                    gen_timestamp(fn, False)
 
         elif ext == '.bin':   # a singlle BUFR file
             source = "gisc"
@@ -1012,9 +1015,9 @@ def process_files(args, flist, station_dict, updated_stations):
                 # move file to badfiles
             except OSError as e:
                 logging.error(f"{f}: {e}")
-            else:
-                if not args.ignore_timestamps:
-                    gen_timestamp(fn, success)
+
+            if not args.ignore_timestamps:
+                gen_timestamp(fn, success)
 
 
 def gen_timestamp(fn, success):
