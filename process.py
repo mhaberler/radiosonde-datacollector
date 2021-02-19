@@ -325,7 +325,7 @@ def process_files(args, flist, station_dict, updated_stations):
                             )
                             if success:
                                 success = gen_output(
-                                    args, source, d, fn, zip, updated_stations
+                                    args, source, d, info.filename, f, updated_stations
                                 )
                             zip_success = zip_success and success
                             file.close()
