@@ -3,7 +3,7 @@
 
 REMOTE_HOST="madis-data.ncep.noaa.gov"
 REMOTE_DIR=point/raob/netcdf/
-LOCAL_DIR=/var/spool/madis
+LOCAL_DIR=/var/spool/madis/incoming
 USER=anonymous
 PASS=user@example.com
 MAIL=user@example.com
