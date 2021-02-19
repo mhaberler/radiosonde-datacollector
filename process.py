@@ -39,7 +39,7 @@ from config import (
 )
 
 
-def gen_output(args, source, h, s, fn, archive, updated_stations):
+def gen_output(args, source, h, fn, archive, updated_stations):
     fc = convert_bufr_to_geojson(args, h)
     return write_geojson(args, source, fc, fn, archive, updated_stations)
 
