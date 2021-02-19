@@ -542,7 +542,6 @@ def main():
         l.extend(list(pathlib.Path(SPOOLDIR_MADIS + INCOMING).glob("*.gz")))
         flist = [str(f) for f in l]
 
-    print(flist)
     # work the backlog
     if not args.sim_housekeep:
         process_files(args, flist, station_dict, updated_stations)
