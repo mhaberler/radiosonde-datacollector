@@ -10,7 +10,7 @@ from string import punctuation
 
 import ciso8601
 
-from constants import earth_avg_radius, earth_gravity
+from constants import earth_avg_radius, earth_gravity, rad
 
 from eccodes import (
     CODES_MISSING_DOUBLE,
