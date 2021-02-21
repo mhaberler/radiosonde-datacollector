@@ -20,3 +20,6 @@ TS_TIMESTAMP = ".timestamp"
 
 # after 3 days move to processed
 KEEP_MADIS_PROCESSED_FILES = 86400 * 3
+
+# added to featurecollection.properties.fmt = FORMAT_VERSION
+FORMAT_VERSION = 2

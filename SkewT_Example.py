@@ -19,13 +19,14 @@ from metpy.units import pandas_dataframe_to_unit_arrays, units
 import numpy as np
 # from siphon.simplewebservice.wyoming import WyomingUpperAir
 
-from station import Station
+from radiosonde import Station
 
 ######################################################################
 # Set time using a datetime object and station as variables
 #
 
 dt = datetime(2021, 2, 18, 12)
+dt = datetime(2021, 2, 21, 12)
 station = 'Wien/Hohe Warte'
 #station = "11035"
 
@@ -92,8 +93,8 @@ skew.plot_dry_adiabats(t0=np.arange(233, 533, 10) * units.K,
 skew.plot_moist_adiabats(t0=np.arange(233, 400, 5) * units.K,
                          alpha=0.25, color='tab:green')
 # skew.plot_mixing_lines(p=np.arange(1000, 99, -20) * units.hPa,
-#                        linestyle='dotted', color='tab:blue')
-
+#                         linestyle='dotted', color='tab:blue')
+skew.plot_mixing_lines(linestyle='dotted', color='tab:blue')
 # Add some descriptive titles
 plt.title('{} Sounding'.format(station), loc='left')
 plt.title('Valid Time: {}'.format(dt), loc='right')

@@ -8,6 +8,7 @@ import brotli
 import geojson
 
 import pytz
+from config import FORMAT_VERSION
 
 
 def write_geojson(args, source, fc, fn, archive, updated_stations):
@@ -64,6 +65,7 @@ def write_geojson(args, source, fc, fn, archive, updated_stations):
         gjfile.write(cmp)
 
     fc.properties["path"] = ref
+    fc.properties["fmt"] = FORMAT_VERSION
 
     if args.dump_geojson:
         pprint(fc)

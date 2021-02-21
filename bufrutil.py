@@ -326,7 +326,7 @@ def convert_bufr_to_geojson(args, h):
             "gpheight": gpheight,
             "temp": s["airTemperature"],
             "dewpoint": s["dewpointTemperature"],
-            "pressure": s["pressure"],
+            "pressure": s["pressure"] / 100,
             "wind_u": u,
             "wind_v": v,
         }

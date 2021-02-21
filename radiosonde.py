@@ -113,7 +113,9 @@ class Station(object):
         for k, v in reshape_feature.items():
             df[v] = pick(flat, k)
 
-        df['pressure'] = df['pressure'].div(100)  # FIXME
+        if not ("fmt" in gj["properties"] and gj["properties"]["fmt"] > 1):
+            df['pressure'] = df['pressure'].div(100)
+
         df_units = {
             'pressure': 'hPa',
             'gpheight': 'meter',
