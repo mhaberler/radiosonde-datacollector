@@ -1,50 +1,27 @@
 import re
 import requests
-from datetime import datetime
-import pytz
 import json
 import geojson
-import flatten
 import brotli
-from pprint import pprint
 import pandas as pd
 from metpy.units import pandas_dataframe_to_unit_arrays, units
-
-top = "https://radiosonde.mah.priv.at/"
-data = "data-dev"
-station_list = "static/station_list.json"
-sources = ["gisc", "madis"]
-
-reshape_feature = {
-    'geometry_coordinates.0': 'lon',
-    'geometry_coordinates.1': 'lat',
-    'geometry_coordinates.2': 'ele',
-    'properties_dewpoint': 'dewpoint',
-    'properties_gpheight': 'gpheight',
-    'properties_pressure': 'pressure',
-    'properties_temp': 'temperature',
-    'properties_wind_u': 'u_wind',
-    'properties_wind_v': 'v_wind',
-}
-
-
-def ts2utc(ts):
-    return datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc)
-
-
-def identity(x):
-    return x
-
-
-def pick(dl, key, conversion=identity):
-    return [conversion(d[key]) for d in dl]
+from datetime import datetime
+import pytz
 
 
 class Station(object):
 
-    def __init__(self, station_id, sources=["gisc", "madis"]):
-
+    def __init__(self,
+                 station_id,
+                 sources=["gisc", "madis"],
+                 data_dir="data-dev",
+                 site="https://radiosonde.mah.priv.at/",
+                 station_list="static/station_list.json"
+                 ):
         self.sources = sources
+        self.data_dir = data_dir
+        self.site = site
+        self.station_list = station_list
         self._read_stationlist()
         self._get_station(station_id)
         self.region = self.station_id[:2]
@@ -55,22 +32,20 @@ class Station(object):
         if station_id in self.stations:
             self.station_id = station_id
             self.station_name = self.stations[station_id]['name']
-            print("found by id", station_id, self.station_name)
             return
         for id, desc in self.stations.items():
             if desc['name'] == station_id:
                 self.station_id = id
                 self.station_name = station_id
-                print("found by name", id, station_id)
                 return
-        print("not found by name or id")
         self.station_id = station_id
         self.station_name = 'unknown'
 
     def _available(self):
-        l = []
+        ascents = []
         for src in self.sources:
-            base = f"{top}/{data}/{src}/{self.region}/{self.ident}/"
+            base = (f"{self.site}/{self.data_dir}/{src}/"
+                    f"{self.region}/{self.ident}/")
             r = requests.get(base)
             if r.status_code == 404:
                 continue
@@ -80,13 +55,12 @@ class Station(object):
                     wmo_id, d, t, _, _ = re.split('_|\.', e['name'])
                     syn_time = datetime.strptime(
                         d + ' ' + t + 'Z', '%Y%m%d %H%M%S%z')
-                    l.append((syn_time, src, e['name']))
-        self.temps = sorted(l, key=lambda tup: tup[1], reverse=True)
+                    ascents.append((syn_time, src, e['name']))
+        self.temps = sorted(ascents, key=lambda tup: tup[1], reverse=True)
 
     def _read_stationlist(self):
-        url = f"{top}/{station_list}"
-
-        r = requests.get(url)
+        stationlist = f"{self.site}/{self.station_list}"
+        r = requests.get(stationlist)
         if r.status_code == 404:
             self.stations = []
         else:
@@ -99,24 +73,38 @@ class Station(object):
         return self.temps
 
     def as_dataframe(self, index=0, date=None):
+
         gj = self.as_geojson(index=index, date=date)
-        flat = []
+
+        # pre-version 2 format files had Pa instead of hPa,
+        # and no "fmt" attribute
+        # normalize on hPa:
+        if "fmt" in gj["properties"]:
+            pscale=1.
+        else:
+            pscale=100.
+        print("pscale=",pscale)
+        flat=[]
         for f in gj["features"]:
-            flat.append(flatten.flatten(f, parent_key=False, separator='_'))
+            v={}
+            v['longitude']=f.geometry.coordinates[0]
+            v['latitude']=f.geometry.coordinates[1]
+            v['elevation']=f.geometry.coordinates[2]
+            v['dewpoint']=f.properties['dewpoint']
+            v['gpheight']=f.properties['gpheight']
+            v['pressure']=f.properties['pressure']
+            v['temperature']=f.properties['temp']
+            v['u_wind']=f.properties['wind_u']
+            v['v_wind']=f.properties['wind_v']
+            v['time']=datetime.utcfromtimestamp(
+                f.properties['time']).replace(tzinfo=pytz.utc)
+            v['pressure']=f.properties['pressure'] / pscale
+            flat.append(v)
 
-        col_names = ['pressure', 'gpheight', 'temperature', 'dewpoint',
+        col_names=['pressure', 'gpheight', 'temperature', 'dewpoint',
               'u_wind', 'v_wind', 'time', 'latitude', 'longitude', 'elevation']
-        df = pd.DataFrame(columns=col_names)
-
-        df['time'] = pick(flat, 'properties_time', conversion=ts2utc)
-
-        for k, v in reshape_feature.items():
-            df[v] = pick(flat, k)
-
-        if not ("fmt" in gj["properties"] and gj["properties"]["fmt"] > 1):
-            df['pressure'] = df['pressure'].div(100)
-
-        df_units = {
+        df=pd.DataFrame(flat, columns=col_names)
+        units={
             'pressure': 'hPa',
             'gpheight': 'meter',
             'temperature': 'kelvin',
@@ -128,55 +116,67 @@ class Station(object):
             'longitude': 'degrees',
             'elevation': 'meter'
         }
-        return pandas_dataframe_to_unit_arrays(df, column_units=df_units)
+        gj["properties"]["station_name"]=self.station_name
+        return (pandas_dataframe_to_unit_arrays(df,
+                                                column_units=units),
+                                                gj["properties"])
 
     def as_geojson(self, index=0, date=None):
-        a = None
+        a=None
         if date:
             if date.tzinfo is None or date.tzinfo.utcoffset(date) is None:
-                date = pytz.utc.localize(date)
-
+                date=pytz.utc.localize(date)
             for t in self.temps:
-                syn_time, src, name = t
+                syn_time, src, name=t
                 if syn_time != date:
                     continue
-                a = t
+                a=t
             if not a:
                 raise ValueError((f"no temp available for station "
-                                  f"'{self.station_name}' ({self.station_id}) at {date}"))
+                                  f"'{self.station_name}'"
+                                  f" ({self.station_id}) at {date}"))
         else:
             try:
-                a = self.temps[index]
+                a=self.temps[index]
             except IndexError:
                 raise ValueError((f"no temp available for station "
-                                  f"'{self.station_name}' ({self.station_id}) index {index}"))
+                                  f"'{self.station_name}' ({self.station_id})"
+                                  f" index {index}"))
 
-        base = f"{top}/{data}/{a[1]}/{self.region}/{self.ident}/{a[2]}"
-        r = requests.get(base)
+        base=(f"{self.site}/{self.data_dir}/"
+              f"{a[1]}/{self.region}/{self.ident}/{a[2]}")
+
+
+        r=requests.get(base)
         if r.status_code == 404:
             return None
         return geojson.loads(brotli.decompress(r.content).decode())
 
 
 if __name__ == "__main__":
-    # Vienna/Hohe Warte
-    station_id = "11035"
+    from pprint import pprint
 
-    st = Station(station_id)
+    # select a station - can be a WMO id or the exact
+    # station name in station_list.json:
+    #
+    station_id = "11035"
+    #station_id = 'Vienna/Hohe Warte'
+
+    st=Station(station_id)
+
+    # list available ascents (aka 'temps')
     for syn_time, src, fn in st.available():
         print(syn_time, src, fn)
 
-    # pprint(st.stations[station_id])
-    dt = datetime(2021, 2, 18, 12)
+    # retrieve a particular ascent
+    dt=datetime(2021, 2, 18, 12)
+    gj=st.as_geojson(date=dt)
 
-    gj = st.as_geojson(date=dt)
-    # pprint(gj)
-    #pprint(flatten.flatten(gj,parent_key=False, separator='_'))
-    # for f in gj["features"]:
-    #     pprint(flatten.flatten(f, parent_key=False, separator='_'))
-    df = st.as_dataframe(date=dt)
+    # st.as_geojson() defaults to the latest ascent
+    # gj = st.as_geojson()
+
+    # retrieve ascent as pandas dataframe with units dictionary,
+    # plus ascent metadata
+    df, metadata=st.as_dataframe(date=dt)
+    pprint(metadata)
     print(df)
-    # df = geopandas.GeoDataFrame(gj)
-
-    # df = json_normalize(gj)
-    # print(df)
