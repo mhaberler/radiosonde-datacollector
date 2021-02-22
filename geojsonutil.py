@@ -67,7 +67,6 @@ def write_geojson(args, source, fc, fn, archive, updated_stations):
         gjfile.write(cmp)
 
     fc.properties["path"] = ref
-    fc.properties["fmt"] = FORMAT_VERSION
 
     if args.dump_geojson:
         pprint(fc)
