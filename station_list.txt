@@ -2690,3 +2690,5 @@ XXXXXX47104  37.81   128.85      89.0    Bukgangneung                   1900 190
 XXXXXX71126  53.55   -114.10    766.0    ZED EDMONTON                   1900 1900    200
 XXXXXX47186  33.33   126.68     235.0    National Typhoon Centre        1900 1900    200
 XXXXXX48811  21.40   103.02     472.0    Dien Bien Phu                  1900 1900    200
+KSM00047155  35.1700  128.5730   37.0    CHANGWON                       1900 1900    200
+USC00317516  36.3464  -78.8858  216.4    ROXBORO_7_ESE                  1900 1900    200
