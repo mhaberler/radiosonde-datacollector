@@ -22,7 +22,7 @@ from bufrutil import convert_bufr_to_geojson, process_bufr
 
 from netcdfutil import process_netcdf
 
-# from constants import *
+from pidfile import *
 
 from config import (
     BROTLI_SUMMARY_QUALITY,
@@ -556,4 +556,10 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        with Pidfile("/tmp/process-radiosonde.pid"):
+            rc = main()
+    except ProcessRunningException:
+        print("the pid file is in use, oops.", file=sys.stderr)
+        rc = -1
+    sys.exit(rc)
