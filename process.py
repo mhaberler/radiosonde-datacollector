@@ -528,38 +528,40 @@ def main():
     logging.basicConfig(level=level)
     os.umask(0o22)
 
-    station_fn, station_dict = update_station_list(args.stations)
-    updated_stations = []
-    summary = read_summary(args.summary)
-    if not summary:
-        # try brotlified version
-        summary = read_summary(args.summary + ".br")
-
-    if args.only_args:
-        flist = args.files
-    else:
-        l = list(pathlib.Path(SPOOLDIR_GISC + INCOMING).glob("*.zip"))
-        l.extend(list(pathlib.Path(SPOOLDIR_MADIS + INCOMING).glob("*.gz")))
-        flist = [str(f) for f in l]
-
-    # work the backlog
-    if not args.sim_housekeep:
-        process_files(args, flist, station_dict, updated_stations)
-
-    if not args.sim_housekeep and updated_stations:
-        logging.debug(f"creating GeoJSON summary: {args.summary}")
-        update_geojson_summary(args, station_dict, updated_stations, summary)
-
-    if not args.only_args:
-        logging.debug("running housekeeping")
-        keep_house(args)
-
-
-if __name__ == "__main__":
     try:
-        with Pidfile("/tmp/process-radiosonde.pid"):
-            rc = main()
+        with Pidfile("/tmp/process-radiosonde.pid",
+                     log=logging.debug,
+                     warn=logging.debug):
+            station_fn, station_dict = update_station_list(args.stations)
+            updated_stations = []
+            summary = read_summary(args.summary)
+            if not summary:
+                # try brotlified version
+                summary = read_summary(args.summary + ".br")
+
+            if args.only_args:
+                flist = args.files
+            else:
+                l = list(pathlib.Path(SPOOLDIR_GISC + INCOMING).glob("*.zip"))
+                l.extend(list(pathlib.Path(SPOOLDIR_MADIS + INCOMING).glob("*.gz")))
+                flist = [str(f) for f in l]
+
+            # work the backlog
+            if not args.sim_housekeep:
+                process_files(args, flist, station_dict, updated_stations)
+
+            if not args.sim_housekeep and updated_stations:
+                logging.debug(f"creating GeoJSON summary: {args.summary}")
+                update_geojson_summary(args, station_dict, updated_stations, summary)
+
+            if not args.only_args:
+                logging.debug("running housekeeping")
+                keep_house(args)
+            return 0
+
     except ProcessRunningException:
         print("the pid file is in use, oops.", file=sys.stderr)
-        rc = -1
-    sys.exit(rc)
+        return -1
+
+if __name__ == "__main__":
+    sys.exit(main())
