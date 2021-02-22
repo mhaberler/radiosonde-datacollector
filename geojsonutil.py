@@ -20,6 +20,8 @@ def write_geojson(args, source, fc, fn, archive, updated_stations):
     if args.station and args.station != station_id:
         return
 
+    fc.properties["fmt"] = FORMAT_VERSION
+
     logging.debug(
         f"output samples retained: {len(fc.features)}, station id={station_id}"
     )
