@@ -110,7 +110,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
             # overwrite the station coords by the coords of the last ascent
             # to properly handle mobile stations
             if asc["id_type"] == "mobile":
-                logging.debug(f"fix coords {station}")
+                logging.debug(f"fix coords {station} -> {asc['lon']} {asc['lat']} {asc['elevation']}")
                 properties = stations_with_ascents[station]["properties"]
                 stations_with_ascents[station] = geojson.Feature(
                         geometry=geojson.Point((asc["lon"], asc["lat"], asc["elevation"])),
