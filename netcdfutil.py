@@ -329,7 +329,11 @@ def emit_ascents(args, source, file, archive, raob, stations):
 def process_netcdf(args, source, file, archive, stationdict):
 
     with gzip.open(file, "rb") as f:
-        nc = Dataset("inmemory.nc", memory=f.read())
+        try:
+            nc = Dataset("inmemory.nc", memory=f.read())
+        except Exception as e:
+            logging.error(f"exception {e} reading {f} as netCDF")
+            return False, None
 
         relTime = nc.variables["relTime"][:].filled(fill_value=np.nan)
         sondTyp = nc.variables["sondTyp"][:].filled(fill_value=np.nan)
