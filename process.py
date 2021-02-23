@@ -36,6 +36,7 @@ from config import (
     TS_FAILED,
     TS_PROCESSED,
     TS_TIMESTAMP,
+    LOCKFILE
 )
 
 
@@ -539,7 +540,7 @@ def main():
     os.umask(0o22)
 
     try:
-        with Pidfile("/tmp/process-radiosonde.pid",
+        with Pidfile(LOCKFILE,
                      log=logging.debug,
                      warn=logging.debug):
             station_fn, station_dict = update_station_list(args.stations)
