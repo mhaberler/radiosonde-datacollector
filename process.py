@@ -110,6 +110,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
             # overwrite the station coords by the coords of the last ascent
             # to properly handle mobile stations
             if asc["id_type"] == "mobile":
+                logging.debug(f"fix coords {station}")
                 stations_with_ascents[station]["geometry"]["coordinates"] = [asc["lon"], asc["lat"], asc["elevation"]]
 
         else:
