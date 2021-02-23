@@ -100,6 +100,11 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                     seen.add(t)
                     dedup.append(d)
             stations_with_ascents[station]["properties"]["ascents"] = dedup
+            # fixup the name if it was added to station_list.json:
+            ident = stations_with_ascents[station]["properties"]["name"]
+            if ident in stations:
+                # using WMO id as name. Replace by string name.
+                stations_with_ascents[station]["properties"]["name"] = stations[ident]["name"]
         else:
             # station appears with first-time ascent
             properties = {}
