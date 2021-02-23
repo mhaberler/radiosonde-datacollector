@@ -103,8 +103,13 @@ def update_geojson_summary(args, stations, updated_stations, summary):
             # fixup the name if it was added to station_list.json:
             ident = stations_with_ascents[station]["properties"]["name"]
             if ident in stations:
-                # using WMO id as name. Replace by string name.
+                # using WMO id as name. Probably mobile. Replace by string name.
                 stations_with_ascents[station]["properties"]["name"] = stations[ident]["name"]
+
+            # overwrite the station coords by the coords of the last ascent
+            # to properly handle mobile stations
+            stations_with_ascents[station]["geometry"]["coordinates"] = [asc["lon"], asc["lat"], asc["elevation"]]
+
         else:
             # station appears with first-time ascent
             properties = {}
