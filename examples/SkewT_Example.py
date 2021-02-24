@@ -28,7 +28,7 @@ dt = datetime(2021, 2, 22, 00)
 # use WMo id or exact name from station_list.json:
 #station = "11035"
 station = 'Wien/Hohe Warte'
-dt = datetime(2021, 2, 22, 3)
+dt = datetime(2021, 2, 24, 3)
 
 station = "11240"
 st = Station(station)
@@ -38,7 +38,7 @@ for syn_time, src, fn in st.available():
     print(syn_time, src, fn)
 
 # 'data' is a pandas.DataFrame with a Metpy units dictionary attached:
-data, metadata = st.as_dataframe(date=dt)
+data, metadata = st.as_dataframe(date=dt, asUnitArray=True)
 
 # 'metadata' is additional information about the ascent and the data source:
 print(f"ascent metadata for station {station} date {dt}:")
