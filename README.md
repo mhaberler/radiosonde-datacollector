@@ -55,7 +55,3 @@ The University of Wyoming runs an archive of soundings with pretty good coverage
 
 ## Credits
 The MADIS processing code is a straight lift from [skewt](https://github.com/johnckealy/skewtapi/blob/master/scripts/query_madis.py) - thanks, John!
-
-## Parental advice
-
-Reading the abovementioned format specifications can make your head explode and warp you back into times when telex was a thing. Skip it and forgive them, this industry has a [100+ years learning curve](https://core.ac.uk/download/pdf/26960518.pdf) behind them. For the rest of us, there are Python bindings for [BUFR](https://pypi.org/project/eccodes/) and [netCDF](https://unidata.github.io/netcdf4-python/)  which make the task survivable.
