@@ -3,7 +3,8 @@ FAKE_TIME_STEPS = 30  # assume 30sec update interval
 MAX_FLIGHT_DURATION = 3600 * 5  # rather unlikely
 
 # see examples/polyfit.py
-ASCENT_RATE = y = 6.0 # m/s = ca 360m/min
+# y = 6.31426 * x + -0.00019 * x^2 + -373.12281
+ASCENT_RATE = 6.3 # m/s = ca 380m/min
 
 BROTLI_SUMMARY_QUALITY = 11  # 7
 
