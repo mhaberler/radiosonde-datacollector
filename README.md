@@ -51,7 +51,7 @@ Ths original [Skew-T example](https://unidata.github.io/python-gallery/examples/
 Following in next installment.
 
 ## Related services
-The University of Wyoming runs an archive of soundings with pretty good coverage, [example here] (http://weather.uwyo.edu/cgi-bin/bufrraob.py?datetime=2021-02-24%2012:00:00&id=10548&type=TEXT:LIST). This website is also used from [Python code](https://unidata.github.io/python-gallery/examples/SkewT_Example.html).
+The University of Wyoming runs an archive of soundings with pretty good coverage - [example here](http://weather.uwyo.edu/cgi-bin/bufrraob.py?datetime=2021-02-24%2012:00:00&id=10238&type=TEXT:LIST). This website is also used from [Python code](https://unidata.github.io/python-gallery/examples/SkewT_Example.html).
 
 ## Credits
 The MADIS processing code is a straight lift from [skewt](https://github.com/johnckealy/skewtapi/blob/master/scripts/query_madis.py) - thanks, John!
