@@ -27,6 +27,7 @@ import geojson
 
 from config import FAKE_TIME_STEPS, MAX_FLIGHT_DURATION
 
+
 class MissingKeyError(Exception):
     def __init__(self, key, message="missing required key"):
         self.key = key
@@ -64,7 +65,8 @@ def bufr_decode(
         num_samples = codes_get_array(ibufr, k)[0]
     except Exception as e:
         codes_release(ibufr)
-        raise MissingKeyError(k, message=f"cant determine number of samples: {e}")
+        raise MissingKeyError(
+            k, message=f"cant determine number of samples: {e}")
 
     # BAIL HERE if no num_samples
 
@@ -85,6 +87,13 @@ def bufr_decode(
         "hour",
         "minute",
         "second",
+        "correctionAlgorithmsForHumidityMeasurements",
+        "pressureSensorType",
+        "temperatureSensorType",
+        "humiditySensorType",
+        "geopotentialHeightCalculation",
+        "trackingTechniqueOrStatusOfSystem",
+        "measuringEquipmentType",
     ]
     fvals = [
         "radiosondeOperatingFrequency",
@@ -97,6 +106,9 @@ def bufr_decode(
         "radiosondeSerialNumber",
         "typicalDate",
         "typicalTime",
+        "text",
+        "softwareVersionNumber"
+
     ]
 
     for k in ivals + fvals + svals:
@@ -202,7 +214,8 @@ def bufr_decode(
 
 def bufr_qc(args, h, s, fn, archive):
     if len(s) < 10:
-        logging.info(f"QC: skipping {fn} from {archive} - only {len(s)} samples")
+        logging.info(
+            f"QC: skipping {fn} from {archive} - only {len(s)} samples")
         return False
 
     # QC here!
@@ -287,6 +300,15 @@ def convert_bufr_to_geojson(args, h):
     add_if_present(properties, h, "sonde_type", "radiosondeType")
     add_if_present(properties, h, "sonde_serial", "radiosondeSerialNumber")
     add_if_present(properties, h, "sonde_frequency", "radiosondeOperatingFrequency")
+    add_if_present(properties, h, "sonde_corr", "correctionAlgorithmsForHumidityMeasurements")
+    add_if_present(properties, h, "sonde_psensor", "pressureSensorType")
+    add_if_present(properties, h, "sonde_tsensor", "temperatureSensorType")
+    add_if_present(properties, h, "sonde_hsensor", "humiditySensorType")
+    add_if_present(properties, h, "sonde_gepot", "geopotentialHeightCalculation")
+    add_if_present(properties, h, "sonde_track", "trackingTechniqueOrStatusOfSystem")
+    add_if_present(properties, h, "sonde_measure", "measuringEquipmentType")
+    add_if_present(properties, h, "sonde_swversion", "softwareVersionNumber")
+    add_if_present(properties, h, "text", "text")
 
     # try hard to determine a reasonable takeoff elevation value
     if "height" in h:
