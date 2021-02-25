@@ -50,9 +50,10 @@ def geopotential_height_to_height(gph):
     )
 
 
-def bufr_decode(
-    f, fn, archive, args, fakeTimes=True, fakeDisplacement=True, logFixup=True
-):
+def bufr_decode(f, fn, archive, args,
+                fakeTimes=True,
+                fakeDisplacement=True,
+                logFixup=True):
     ibufr = codes_bufr_new_from_file(f)
     if not ibufr:
         raise BufrUnreadableError("empty file", fn, archive)
@@ -300,7 +301,8 @@ def convert_bufr_to_geojson(args, h):
     add_if_present(properties, h, "sonde_type", "radiosondeType")
     add_if_present(properties, h, "sonde_serial", "radiosondeSerialNumber")
     add_if_present(properties, h, "sonde_frequency", "radiosondeOperatingFrequency")
-    add_if_present(properties, h, "sonde_corr", "correctionAlgorithmsForHumidityMeasurements")
+    add_if_present(properties, h, "sonde_humcorr", "correctionAlgorithmsForHumidityMeasurements")
+
     add_if_present(properties, h, "sonde_psensor", "pressureSensorType")
     add_if_present(properties, h, "sonde_tsensor", "temperatureSensorType")
     add_if_present(properties, h, "sonde_hsensor", "humiditySensorType")
