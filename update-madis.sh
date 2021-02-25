@@ -1,10 +1,10 @@
 #!/bin/bash
-
 REMOTE_HOST="madis-data.ncep.noaa.gov"
 REMOTE_DIR=point/raob/netcdf/
 LOCAL_DIR=var/spool/madis/incoming
 USER=anonymous
-PASS=mah@mah.priv.at
+MAILDEST=root
+PASS=user@yourserver.com
 
 
 (
@@ -19,9 +19,8 @@ PASS=mah@mah.priv.at
   then
     echo madis update processed OK | logger -t processmail
   else
-    echo "stderr=$err stdout=$var" | mail -s 'madis update failed' mah
-    #/usr/local/bin/telegram.sh `date` mah:  madis update FAILED: $err >/dev/null
+    echo "stderr=$err stdout=$var" | mail -s 'madis update failed' $MAILDEST
   fi
   rm -f "$TMP"
 
-) 9>/var/lock/madis-update.sh
+) 9>/var/lock/update-madis.sh
