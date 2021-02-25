@@ -1,0 +1,30 @@
+#0-02-097 - RHSENS
+#Type of humidity sensor
+0	VIZ Mark II Carbon Hygristor
+1	VIZ B2 Hygristor
+2	Vaisala A-Humicap
+3	Vaisala H-Humicap
+4	Capacitance sensor
+5	Vaisala RS90
+6	Sippican Mark IIA Carbon Hygristor
+7	Twin alternatively-heated humicap capacitance sensor
+8	Humicap capacitance sensor with active de-icing method
+9	Carbon hygristor
+10	Psychrometer
+11	Capacitive (polymer)
+12	Capacitive (ceramic, including metal oxide)
+13	Resistive (generic)
+14	Resistive (salt polymer)
+15	Resistive (conductive polymer)
+16	Thermal conductivity
+17	Gravimetric
+18	Paper-metal coil
+19	Ordinary human hair
+20	Rolled hair (torsion)
+21	Goldbeater's skin
+22	Chilled mirror hygrometer
+23	Dew cell
+24	Optical absorption sensor
+25-29	Reserved
+30	Other
+31	Missing value
