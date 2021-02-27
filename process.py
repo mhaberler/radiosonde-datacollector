@@ -206,7 +206,7 @@ def slimdown(st):
         a.pop('sonde_swversion', None)
         a.pop('sonde_frequency', None)
 
-        if a['id_type'] == 'wmo':
+        if st.properties['id_type'] == 'wmo':
             # fixed station. Take coords from geometry.coords.
             a.pop('lat', None)
             a.pop('lon', None)
