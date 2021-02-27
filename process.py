@@ -144,13 +144,42 @@ def update_geojson_summary(args, stations, updated_stations, summary):
         fc.features.append(f)
 
     gj = geojson.dumps(fc, indent=4)
+    # dest given as "foo/summary.geojson"
     dest = os.path.splitext(args.summary)[0]
-    if not dest.endswith(".br"):
-        dest += ".br"
+    # dest now 'foo/summary' or so
 
     logging.debug(f"summary {dest}: {ns} active stations, {na} ascents")
 
-    fd, path = tempfile.mkstemp(dir=args.tmpdir)
+    gen_br_file(gj, args.tmpdir, dest)
+    gen_br_file(gj, args.tmpdir, dest + "-slimmed")
+
+
+    return
+
+    # fd, path = tempfile.mkstemp(dir=args.tmpdir)
+    # src = gj.encode("utf8")
+    # start = time.time()
+    # dst = brotli.compress(src, quality=BROTLI_SUMMARY_QUALITY)
+    # end = time.time()
+    # dt = end - start
+    # sl = len(src)
+    # dl = len(dst)
+    # ratio = (1.0 - dl / sl) * 100.0
+    # logging.debug(
+    #     f"summary {dest}: brotli {sl} -> {dl}, compression={ratio:.1f}% in {dt:.3f}s"
+    # )
+    # os.write(fd, dst)
+    # os.fsync(fd)
+    # os.close(fd)
+    # os.rename(path, dest)
+    # os.chmod(dest, 0o644)
+
+def gen_br_file(gj, tmpdir, dest):
+    if not dest.endswith(".geojson"):
+        dest += ".geojson"
+    if not dest.endswith(".br"):
+        dest += ".br"
+    fd, path = tempfile.mkstemp(dir=tmpdir)
     src = gj.encode("utf8")
     start = time.time()
     dst = brotli.compress(src, quality=BROTLI_SUMMARY_QUALITY)
@@ -167,7 +196,6 @@ def update_geojson_summary(args, stations, updated_stations, summary):
     os.close(fd)
     os.rename(path, dest)
     os.chmod(dest, 0o644)
-
 
 def newer(filename, ext):
     """
