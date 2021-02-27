@@ -179,7 +179,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
         fc.features.append(f)
     gj = geojson.dumps(fc, indent=4)
     logging.debug(f"slim summary {dest}: {ns} active stations, {na} ascents")
-    gen_br_file(gj, args.tmpdir, dest + "-slim")
+    gen_br_file(gj, args.tmpdir, dest) # + "-slim")
     return
 
 def slimdown(st):
