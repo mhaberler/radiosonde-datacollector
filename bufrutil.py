@@ -294,8 +294,8 @@ def convert_bufr_to_geojson(args, h):
         "path_source": "origin",
         "syn_timestamp": ts,
         "firstSeen": takeoff.timestamp(),
-        "lat": h["latitude"],
-        "lon": h["longitude"],
+        "lat": round(h["latitude"], 6),
+        "lon": round(h["longitude"], 6),
     }
     add_if_present(properties, h, "sonde_type", "radiosondeType")
     add_if_present(properties, h, "sonde_serial", "radiosondeSerialNumber")
