@@ -102,6 +102,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                     seen.add(t)
                     dedup.append(d)
             stations_with_ascents[station]["properties"]["ascents"] = dedup
+
             # fixup the name if it was added to station_list.json:
             ident = stations_with_ascents[station]["properties"]["name"]
             if ident in stations:
@@ -141,9 +142,10 @@ def update_geojson_summary(args, stations, updated_stations, summary):
     fc = geojson.FeatureCollection([])
     fc.properties = {
         "fmt":  FORMAT_VERSION,
-        "generated": now()
+        "generated": int(now())
     }
     for _st, f in stations_with_ascents.items():
+        slimdown(f)
         ns += 1
         na += len(f.properties["ascents"])
         fc.features.append(f)
@@ -155,11 +157,31 @@ def update_geojson_summary(args, stations, updated_stations, summary):
 
     logging.debug(f"summary {dest}: {ns} active stations, {na} ascents")
 
-    gen_br_file(gj, args.tmpdir, dest)
+#DISABLED gen_br_file(gj, args.tmpdir, dest)
+
+
     gen_br_file(gj, args.tmpdir, dest + "-slimmed")
-
-
     return
+
+def slimdown(st):
+    ascents = st.properties["ascents"]
+
+    for a in ascents:
+        a.pop('path', None)
+        a.pop('path_source', None)
+        a.pop('origin_member', None)
+        a.pop('origin_archive', None)
+        a.pop('firstSeen', None)
+        a.pop('lastSeen', None)
+        a.pop('fmt', None)
+        a.pop('sonde_type', None)
+
+        if a['id_type'] == 'wmo':
+            # fixed station. Take coords from geometry.coords.
+            a.pop('lat', None)
+            a.pop('lon', None)
+            a.pop('ele', None)
+
 
     # fd, path = tempfile.mkstemp(dir=args.tmpdir)
     # src = gj.encode("utf8")
