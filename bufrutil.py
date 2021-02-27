@@ -109,7 +109,6 @@ def bufr_decode(f, fn, archive, args,
         "typicalTime",
         "text",
         "softwareVersionNumber"
-
     ]
 
     for k in ivals + fvals + svals:
@@ -348,14 +347,16 @@ def convert_bufr_to_geojson(args, h):
         properties = {
             "time": sampleTime.timestamp(),
             "gpheight": gpheight,
-            "temp": s["airTemperature"],
-            "dewpoint": s["dewpointTemperature"],
-            "pressure": s["pressure"] / 100.,
-            "wind_u": u,
-            "wind_v": v,
+            "temp": round(s["airTemperature"],2),
+            "dewpoint": round(s["dewpointTemperature"],2),
+            "pressure": round(s["pressure"] / 100.,2),
+            "wind_u": round(u,2),
+            "wind_v": round(v,2),
         }
         f = geojson.Feature(
-            geometry=geojson.Point((lon, lat, height)), properties=properties
+            geometry=geojson.Point((round(lon,6),
+                                    round(lat,6),
+                                    round(height,2))), properties=properties
         )
         fc.features.append(f)
     fc.properties["lastSeen"] = sampleTime.timestamp()

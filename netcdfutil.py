@@ -264,9 +264,9 @@ def emit_ascents(args, source, file, archive, raob, stations):
             "path_source": "simulated",
             "syn_timestamp": syntime.timestamp(),
             "firstSeen": float(relTime[i]),
-            "lat": float(staLat[i]),
-            "lon": float(staLon[i]),
-            "elevation": float(staElev[i]),
+            "lat": round(float(staLat[i]),6),
+            "lon": round(float(staLon[i]),6),
+            "elevation": round(float(staElev[i]),1)
         }
         fc = geojson.FeatureCollection([])
         fc.properties = properties
@@ -305,15 +305,15 @@ def emit_ascents(args, source, file, archive, raob, stations):
             v = V[i][n]
             du = dv = 0
             if u > -9999.0 and v > -9999.0:
-                properties["wind_u"] = u
-                properties["wind_v"] = v
+                properties["wind_u"] = round(u,2)
+                properties["wind_v"] = round(v,2)
                 dt = secsIntoFlight - prevSecsIntoFlight
                 du = u * dt
                 dv = v * dt
                 lat_t, lon_t = latlonPlusDisplacement(lat=lat_t, lon=lon_t, u=du, v=dv)
                 prevSecsIntoFlight = secsIntoFlight
             f = geojson.Feature(
-                geometry=geojson.Point((float(lon_t), float(lat_t), height)),
+                geometry=geojson.Point((float(lon_t), float(lat_t), round(height,2))),
                 properties=properties,
             )
             if not f.is_valid:
