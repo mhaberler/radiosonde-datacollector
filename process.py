@@ -165,6 +165,23 @@ def update_geojson_summary(args, stations, updated_stations, summary):
 
 def slimdown(st):
     ascents = st.properties["ascents"]
+# "station_id": "7JUNA4N",
+# "id_type": "mobile",
+# "source": "BUFR",
+# "syn_timestamp": 1614448800,
+# "lat": 51.572140000000005,
+# "lon": -13.280890000000001,
+# "sonde_serial": "20038656",
+# "sonde_serial": 402000000,
+# "sonde_humcorr": 3,
+# "sonde_psensor": 1,
+# "sonde_tsensor": 5,
+# "sonde_hsensor": 4,
+# "sonde_gepot": 1,
+# "sonde_track": 8,
+# "sonde_measure": 7,
+# "sonde_swversion": "5.15.03.01",
+# "elevation": 40
 
     for a in ascents:
         a.pop('path', None)
@@ -175,12 +192,21 @@ def slimdown(st):
         a.pop('lastSeen', None)
         a.pop('fmt', None)
         a.pop('sonde_type', None)
+        a.pop('sonde_serial', None)
+        a.pop('sonde_humcorr', None)
+        a.pop('sonde_psensor', None)
+        a.pop('sonde_tsensor', None)
+        a.pop('sonde_hsensor', None)
+        a.pop('sonde_gepot', None)
+        a.pop('sonde_track', None)
+        a.pop('sonde_measure', None)
+        a.pop('sonde_swversion', None)
 
         if a['id_type'] == 'wmo':
             # fixed station. Take coords from geometry.coords.
             a.pop('lat', None)
             a.pop('lon', None)
-            a.pop('ele', None)
+            a.pop('elevation', None)
 
 
     # fd, path = tempfile.mkstemp(dir=args.tmpdir)
