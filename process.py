@@ -138,6 +138,29 @@ def update_geojson_summary(args, stations, updated_stations, summary):
             )
 
     # create GeoJSON summary
+    # dest given as "foo/summary.geojson"
+    dest = os.path.splitext(args.summary)[0]
+    # dest now 'foo/summary' or so
+
+    # old style, phat
+    ns = na = 0
+    fc = geojson.FeatureCollection([])
+    fc.properties = {
+        "fmt":  FORMAT_VERSION,
+        "generated": int(now())
+    }
+    for _st, f in stations_with_ascents.items():
+        #sid, stype = slimdown(f)
+        # f.properties['station_id'] = sid
+        # f.properties['id_type'] = stype
+        ns += 1
+        na += len(f.properties["ascents"])
+        fc.features.append(f)
+    gj = geojson.dumps(fc, indent=4)
+    logging.debug(f"phat summary {dest}: {ns} active stations, {na} ascents")
+    gen_br_file(gj, args.tmpdir, dest)
+
+    # slimmed version
     ns = na = 0
     fc = geojson.FeatureCollection([])
     fc.properties = {
@@ -151,18 +174,9 @@ def update_geojson_summary(args, stations, updated_stations, summary):
         ns += 1
         na += len(f.properties["ascents"])
         fc.features.append(f)
-
     gj = geojson.dumps(fc, indent=4)
-    # dest given as "foo/summary.geojson"
-    dest = os.path.splitext(args.summary)[0]
-    # dest now 'foo/summary' or so
-
-    logging.debug(f"summary {dest}: {ns} active stations, {na} ascents")
-
-#DISABLED gen_br_file(gj, args.tmpdir, dest)
-
-
-    gen_br_file(gj, args.tmpdir, dest + "-slimmed")
+    logging.debug(f"slim summary {dest}: {ns} active stations, {na} ascents")
+    gen_br_file(gj, args.tmpdir, dest + "-slim")
     return
 
 def slimdown(st):
@@ -197,7 +211,7 @@ def slimdown(st):
 
         a.pop('station_id', None)
         a.pop('id_type', None)
-        
+
     return result
 
 def gen_br_file(gj, tmpdir, dest):
