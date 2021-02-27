@@ -36,7 +36,8 @@ from config import (
     TS_FAILED,
     TS_PROCESSED,
     TS_TIMESTAMP,
-    LOCKFILE
+    LOCKFILE,
+    FORMAT_VERSION
 )
 
 
@@ -138,6 +139,10 @@ def update_geojson_summary(args, stations, updated_stations, summary):
     # create GeoJSON summary
     ns = na = 0
     fc = geojson.FeatureCollection([])
+    fc.properties = {
+        "fmt":  FORMAT_VERSION,
+        "generated": now()
+    }
     for _st, f in stations_with_ascents.items():
         ns += 1
         na += len(f.properties["ascents"])
