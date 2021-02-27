@@ -321,7 +321,7 @@ def convert_bufr_to_geojson(args, h):
     else:
         # take height of first sample
         gph = samples[0]["nonCoordinateGeopotentialHeight"]
-        properties["elevation"] = geopotential_height_to_height(gph)
+        properties["elevation"] = round(geopotential_height_to_height(gph),2)
 
     fc = geojson.FeatureCollection([])
     fc.properties = properties
@@ -346,7 +346,7 @@ def convert_bufr_to_geojson(args, h):
 
         properties = {
             "time": sampleTime.timestamp(),
-            "gpheight": gpheight,
+            "gpheight": round(gpheight,2),
             "temp": round(s["airTemperature"],2),
             "dewpoint": round(s["dewpointTemperature"],2),
             "pressure": round(s["pressure"] / 100.,2),
