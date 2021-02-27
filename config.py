@@ -26,4 +26,4 @@ LOCKFILE = "/var/lock/process-radiosonde.pid"
 KEEP_MADIS_PROCESSED_FILES = 86400 * 3
 
 # added to featurecollection.properties.fmt = FORMAT_VERSION
-FORMAT_VERSION = 2
+FORMAT_VERSION = 3
