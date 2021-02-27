@@ -145,7 +145,9 @@ def update_geojson_summary(args, stations, updated_stations, summary):
         "generated": int(now())
     }
     for _st, f in stations_with_ascents.items():
-        slimdown(f)
+        sid, stype = slimdown(f)
+        f.properties['station_id'] = sid
+        f.properties['id_type'] = stype
         ns += 1
         na += len(f.properties["ascents"])
         fc.features.append(f)
@@ -165,23 +167,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
 
 def slimdown(st):
     ascents = st.properties["ascents"]
-# "station_id": "7JUNA4N",
-# "id_type": "mobile",
-# "source": "BUFR",
-# "syn_timestamp": 1614448800,
-# "lat": 51.572140000000005,
-# "lon": -13.280890000000001,
-# "sonde_serial": "20038656",
-# "sonde_serial": 402000000,
-# "sonde_humcorr": 3,
-# "sonde_psensor": 1,
-# "sonde_tsensor": 5,
-# "sonde_hsensor": 4,
-# "sonde_gepot": 1,
-# "sonde_track": 8,
-# "sonde_measure": 7,
-# "sonde_swversion": "5.15.03.01",
-# "elevation": 40
+    result = ascents[0]['station_id'], ascents[0]['id_type']
 
     for a in ascents:
         a.pop('path', None)
@@ -201,6 +187,7 @@ def slimdown(st):
         a.pop('sonde_track', None)
         a.pop('sonde_measure', None)
         a.pop('sonde_swversion', None)
+        a.pop('sonde_frequency', None)
 
         if a['id_type'] == 'wmo':
             # fixed station. Take coords from geometry.coords.
@@ -208,24 +195,10 @@ def slimdown(st):
             a.pop('lon', None)
             a.pop('elevation', None)
 
-
-    # fd, path = tempfile.mkstemp(dir=args.tmpdir)
-    # src = gj.encode("utf8")
-    # start = time.time()
-    # dst = brotli.compress(src, quality=BROTLI_SUMMARY_QUALITY)
-    # end = time.time()
-    # dt = end - start
-    # sl = len(src)
-    # dl = len(dst)
-    # ratio = (1.0 - dl / sl) * 100.0
-    # logging.debug(
-    #     f"summary {dest}: brotli {sl} -> {dl}, compression={ratio:.1f}% in {dt:.3f}s"
-    # )
-    # os.write(fd, dst)
-    # os.fsync(fd)
-    # os.close(fd)
-    # os.rename(path, dest)
-    # os.chmod(dest, 0o644)
+        a.pop('station_id', None)
+        a.pop('id_type', None)
+        
+    return result
 
 def gen_br_file(gj, tmpdir, dest):
     if not dest.endswith(".geojson"):
