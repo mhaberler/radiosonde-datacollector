@@ -72,7 +72,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
         for feature in summary.features:
             a = feature.properties["ascents"]
             if len(a):
-                st_id = a[0]["station_id"]
+                st_id = feature.properties["station_id"]
                 stations_with_ascents[st_id] = feature
 
     # remove entries from ascents which have a syn_timestamp less than cutoff_ts
