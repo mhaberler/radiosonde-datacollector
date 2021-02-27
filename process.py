@@ -117,7 +117,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                 stations_with_ascents[station] = geojson.Feature(
                         geometry=geojson.Point((round(asc["lon"], 6),
                                                 round(asc["lat"], 6),
-                                                round(asc["elevation"],1)),
+                                                round(asc["elevation"], 1))),
                         properties=properties)
 
         else:
