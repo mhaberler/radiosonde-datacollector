@@ -14,7 +14,7 @@ from pprint import pprint
 import brotli
 import re
 from operator import itemgetter
-import reverse_geocode
+import reverse_geocoder as rg
 
 '''
 
@@ -42,11 +42,13 @@ if station_id in station_list:
 
 MADIS = r'/var/www/radiosonde.mah.priv.at/data-dev/madis'
 GISC = r'/var/www/radiosonde.mah.priv.at/data-dev/gisc'
-# MADIS = r'madis'
-# GISC = r'gisc'0
-# STATION_LIST = r'station_list.json'
+MADIS = r'madis'
+GISC = r'gisc'
+STATION_LIST = r'station_list.json'
 
 flights = {}
+missing = {}
+txtfrag = []
 
 def now():
     return datetime.utcnow().timestamp()
@@ -126,10 +128,20 @@ def walkt_tree(toplevel, directory, pattern, after):
             f.properties['name'] = st['name']
         else:
             if idtype == 'unregistered':
-                loc = reverse_geocode.get((st["lat"], st["lon"]))
-                if loc:
-                    f.properties['name'] = loc['city'] + ", " + loc['country_code']
-                #print(loc, file=sys.stderr)
+                if stid not in missing:
+                    locations = rg.search((st["lat"], st["lon"]))
+                    if locations:
+                        print(stid, locations, st["lat"], st["lon"], st["elevation"],file=sys.stderr)
+                        loc = locations[0]
+                        f.properties['name'] = loc['name'] + ", " + loc['cc']
+                        s = f'{stid.rjust(11, "X")} {st["lat"]} {st["lon"]} {st["elevation"]} {f.properties["name"]} 2020'
+                        txtfrag.append(s)
+                    missing[stid] = {
+                        "name" : f.properties['name'],
+                        "lat" :  st["lat"],
+                        "lon" :  st["lon"],
+                        "elevation" :  st["elevation"]
+                    }
         # this needs fixing up for mobiles after sorting
         f.geometry = Point((round(st["lon"], 6),
                             round(st["lat"], 6),
@@ -198,7 +210,9 @@ def main(dirlist):
     for _st, f in flights.items():
         fc.features.append(f)
     print(geojson.dumps(fc, indent=4))
-
+    #print(json.dumps(missing, indent=4), file=sys.stderr)
+    for l in txtfrag:
+        print(l, file=sys.stderr)
 
 if __name__ == "__main__":
     dirlist = [MADIS, GISC]
