@@ -129,7 +129,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                 st = stations[station]
                 coords = (st["lon"], st["lat"], st["elevation"])
                 properties["name"] = st["name"]
-                properties["station_id"] = st["station_id"]
+                properties["station_id"] = station
                 properties["id_type"] = "wmo"
             else:
 
@@ -144,7 +144,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                     properties["id_type"] =  'unregistered'
                 else:
                     # looks like weather ship
-                    properties["id_type"] =  'mobile'  
+                    properties["id_type"] =  'mobile'
 
 
             stations_with_ascents[station] = geojson.Feature(
