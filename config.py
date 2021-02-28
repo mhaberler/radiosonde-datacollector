@@ -21,6 +21,7 @@ TS_PROCESSED = ".processed"
 TS_FAILED = ".failed"
 TS_TIMESTAMP = ".timestamp"
 LOCKFILE = "/var/lock/process-radiosonde.pid"
+STATION_LIST = "/var/www/radiosonde.mah.priv.at/static/station_list.json"
 
 # after 3 days move to processed
 KEEP_MADIS_PROCESSED_FILES = 86400 * 3
