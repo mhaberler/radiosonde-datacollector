@@ -184,8 +184,11 @@ def update_geojson_summary(args, stations, updated_stations, summary):
 
 def slimdown(st):
     ascents = st.properties["ascents"]
-    result = st.properties['station_id'], st.properties['id_type']
-
+    try:
+        result = st.properties['station_id'], st.properties['id_type']
+    except KeyError as e:
+        result = ascents[0].properties['station_id'],ascents[0].properties['id_type']
+        
     for a in ascents:
         a.pop('path', None)
         a.pop('path_source', None)
