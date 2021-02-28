@@ -10,7 +10,7 @@ BROTLI_SUMMARY_QUALITY = 11  # 7
 
 # drop ascents older than MAX_ASCENT_AGE_IN_SUMMARY from summary
 # the files are kept nevertheless
-MAX_ASCENT_AGE_IN_SUMMARY = 7 * 3600 * 24
+MAX_ASCENT_AGE_IN_SUMMARY = 14 * 3600 * 24
 
 SPOOLDIR_MADIS = r"/var/spool/madis/"
 SPOOLDIR_GISC = r"/var/spool/gisc/"
