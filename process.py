@@ -129,11 +129,23 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                 st = stations[station]
                 coords = (st["lon"], st["lat"], st["elevation"])
                 properties["name"] = st["name"]
+                properties["station_id"] = st["station_id"]
+                properties["id_type"] = "wmo"
             else:
+
                 # unlisted station: anonymous + mobile
                 # take coords and station_id as name from ascent
                 coords = (asc["lon"], asc["lat"], asc["elevation"])
                 properties["name"] = asc["station_id"]
+
+                if re.match(r"^\d{5}$",station):
+                    # WMO id syntax, but not in station_list
+                    # hence an unregistered but fixed station
+                    properties["id_type"] =  'unregistered'
+                else:
+                    # looks like weather ship
+                    properties["id_type"] =  'mobile'  
+
 
             stations_with_ascents[station] = geojson.Feature(
                 geometry=geojson.Point(coords), properties=properties
@@ -143,25 +155,6 @@ def update_geojson_summary(args, stations, updated_stations, summary):
     # dest given as "foo/summary.geojson"
     dest = os.path.splitext(args.summary)[0]
     # dest now 'foo/summary' or so
-
-    if False:
-        # old style, phat
-        ns = na = 0
-        fc = geojson.FeatureCollection([])
-        fc.properties = {
-            "fmt":  FORMAT_VERSION,
-            "generated": int(now())
-        }
-        for _st, f in stations_with_ascents.items():
-            #sid, stype = slimdown(f)
-            # f.properties['station_id'] = sid
-            # f.properties['id_type'] = stype
-            ns += 1
-            na += len(f.properties["ascents"])
-            fc.features.append(f)
-        gj = geojson.dumps(fc, indent=4)
-        logging.debug(f"phat summary {dest}: {ns} active stations, {na} ascents")
-        gen_br_file(gj, args.tmpdir, dest)
 
     # slimmed version
     ns = na = 0
