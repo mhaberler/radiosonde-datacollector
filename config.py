@@ -27,4 +27,5 @@ STATION_LIST = "/var/www/radiosonde.mah.priv.at/static/station_list.json"
 KEEP_MADIS_PROCESSED_FILES = 86400 * 3
 
 # added to featurecollection.properties.fmt = FORMAT_VERSION
-FORMAT_VERSION = 3
+# 4 - using deep subdirs year/month under station
+FORMAT_VERSION = 4

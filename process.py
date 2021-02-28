@@ -188,7 +188,7 @@ def slimdown(st):
         result = st.properties['station_id'], st.properties['id_type']
     except KeyError as e:
         result = ascents[0].properties['station_id'],ascents[0].properties['id_type']
-        
+
     for a in ascents:
         a.pop('path', None)
         a.pop('path_source', None)
@@ -582,6 +582,12 @@ def main():
         action="store_true",
         default=False,
         help="just list what would happen to spooldirs; no input file processing",
+    )
+    parser.add_argument(
+        "--deep",
+        action="store_true",
+        default=False,
+        help="use year/month subdirs under station dir",
     )
     parser.add_argument("--only-args", action="store_true", default=False)
     parser.add_argument("--summary", action="store", required=True)

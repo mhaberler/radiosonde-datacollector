@@ -39,12 +39,20 @@ def write_geojson(args, source, fc, fn, archive, updated_stations):
         tzinfo=pytz.utc
     )
     day = syn_time.strftime("%Y%m%d")
+    year = syn_time.strftime("%Y")
+    month = syn_time.strftime("%m")
     time = syn_time.strftime("%H%M%S")
 
-    dest = (
-        f"{args.destdir}/{source}/{cc}/{subdir}/{station_id}_{day}_{time}.geojson{cext}"
-    )
-    ref = f"{source}/{cc}/{subdir}/{station_id}_{day}_{time}.geojson"
+    if args.deep:
+        dest = (
+            f"{args.destdir}/{source}/{cc}/{subdir}/{year}/{month}/{station_id}_{day}_{time}.geojson{cext}"
+        )
+        ref = f"{source}/{cc}/{subdir}/{year}/{month}/{station_id}_{day}_{time}.geojson"
+    else:
+        dest = (
+            f"{args.destdir}/{source}/{cc}/{subdir}/{station_id}_{day}_{time}.geojson{cext}"
+        )
+        ref = f"{source}/{cc}/{subdir}/{station_id}_{day}_{time}.geojson"
 
     path = pathlib.Path(dest).parent.absolute()
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
