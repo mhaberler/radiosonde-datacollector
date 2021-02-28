@@ -8,7 +8,7 @@ import ciso8601
 from datetime import datetime
 import pytz
 import json
-from config import STATION_LIST, MAX_ASCENT_AGE_IN_SUMMARY
+from config import STATION_LIST, MAX_ASCENT_AGE_IN_SUMMARY, FORMAT_VERSION
 from geojson import Feature, FeatureCollection, Point
 from pprint import pprint
 import brotli
@@ -43,7 +43,7 @@ if station_id in station_list:
 MADIS = r'/var/www/radiosonde.mah.priv.at/data-dev/madis'
 GISC = r'/var/www/radiosonde.mah.priv.at/data-dev/gisc'
 # MADIS = r'madis'
-# GISC = r'gisc'
+# GISC = r'gisc'0
 # STATION_LIST = r'station_list.json'
 
 flights = {}
@@ -154,6 +154,29 @@ def fixup_flights(flights):
                                 round(latest["lat"], 6),
                                 round(latest["elevation"], 1)))
 
+def gen_br_file(gj, tmpdir, dest):
+    if not dest.endswith(".geojson"):
+        dest += ".geojson"
+    if not dest.endswith(".br"):
+        dest += ".br"
+    fd, path = tempfile.mkstemp(dir=tmpdir)
+    src = gj.encode("utf8")
+    start = time.time()
+    dst = brotli.compress(src, quality=BROTLI_SUMMARY_QUALITY)
+    end = time.time()
+    dt = end - start
+    sl = len(src)
+    dl = len(dst)
+    ratio = (1.0 - dl / sl) * 100.0
+    logging.debug(
+        f"summary {dest}: brotli {sl} -> {dl}, compression={ratio:.1f}% in {dt:.3f}s"
+    )
+    os.write(fd, dst)
+    os.fsync(fd)
+    os.close(fd)
+    os.rename(path, dest)
+    os.chmod(dest, 0o644)
+
 def main(dirlist):
     cutoff_ts = now() - MAX_ASCENT_AGE_IN_SUMMARY
     global station_list
@@ -167,7 +190,14 @@ def main(dirlist):
         ntotal = ntotal + nf
 
     fixup_flights(flights)
-    pprint(flights)
+    fc = geojson.FeatureCollection([])
+    fc.properties = {
+        "fmt":  FORMAT_VERSION,
+        "generated": int(now())
+    }
+    for _st, f in flights.items():
+        fc.features.append(f)
+    print(geojson.dumps(fc, indent=4))
 
 
 if __name__ == "__main__":
