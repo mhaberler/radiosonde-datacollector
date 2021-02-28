@@ -42,9 +42,9 @@ if station_id in station_list:
 
 MADIS = r'/var/www/radiosonde.mah.priv.at/data-dev/madis'
 GISC = r'/var/www/radiosonde.mah.priv.at/data-dev/gisc'
-MADIS = r'madis'
-GISC = r'gisc'
-STATION_LIST = r'station_list.json'
+# MADIS = r'madis'
+# GISC = r'gisc'
+# STATION_LIST = r'station_list.json'
 
 flights = {}
 missing = {}
