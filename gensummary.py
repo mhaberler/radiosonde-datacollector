@@ -205,7 +205,8 @@ def main(dirlist):
     fc = geojson.FeatureCollection([])
     fc.properties = {
         "fmt":  FORMAT_VERSION,
-        "generated": int(now())
+        "generated": int(now()),
+        "max_age" : MAX_ASCENT_AGE_IN_SUMMARY
     }
     for _st, f in flights.items():
         fc.features.append(f)
