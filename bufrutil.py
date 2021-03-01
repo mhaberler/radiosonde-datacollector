@@ -292,7 +292,7 @@ def convert_bufr_to_geojson(args, h):
         "id_type": typ,
         "source": "BUFR",
         "path_source": "origin",
-        "syn_timestamp": ts,
+        "syn_timestamp": int(ts),
         "firstSeen": takeoff.timestamp(),
         "lat": round(h["latitude"], 6),
         "lon": round(h["longitude"], 6),

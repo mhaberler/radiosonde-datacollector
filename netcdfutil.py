@@ -262,7 +262,7 @@ def emit_ascents(args, source, file, archive, raob, stations):
             "source": "netCDF",
             "sonde_type": int(sondTyp[i]),
             "path_source": "simulated",
-            "syn_timestamp": syntime.timestamp(),
+            "syn_timestamp": int(syntime.timestamp()),
             "firstSeen": float(relTime[i]),
             "lat": round(float(staLat[i]),6),
             "lon": round(float(staLon[i]),6),
