@@ -161,7 +161,8 @@ def update_geojson_summary(args, stations, updated_stations, summary):
     fc = geojson.FeatureCollection([])
     fc.properties = {
         "fmt":  FORMAT_VERSION,
-        "generated": int(now())
+        "generated": int(now()),
+        "max_age" : args.max_age,
     }
     for _st, f in stations_with_ascents.items():
         sid, stype = slimdown(f)
