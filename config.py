@@ -10,7 +10,7 @@ BROTLI_SUMMARY_QUALITY = 11  # 7
 
 # drop ascents older than MAX_ASCENT_AGE_IN_SUMMARY from summary
 # the files are kept nevertheless
-MAX_ASCENT_AGE_IN_SUMMARY = 14 * 3600 * 24
+MAX_DAYS_IN_SUMMARY = 14
 
 SPOOLDIR_MADIS = r"/var/spool/madis/"
 SPOOLDIR_GISC = r"/var/spool/gisc/"
@@ -22,7 +22,17 @@ TS_PROCESSED = ".processed"
 TS_FAILED = ".failed"
 TS_TIMESTAMP = ".timestamp"
 LOCKFILE = "/var/lock/process-radiosonde.pid"
-STATION_LIST = "/var/www/radiosonde.mah.priv.at/static/station_list.json"
+DATA_DIR = "data/"
+STATIC_DIR = "static/"
+WWW_DIR = "/var/www/radiosonde.mah.priv.at/"
+STATION_LIST = WWW_DIR + STATIC_DIR + "station_list.json"
+MADIS_DATA = WWW_DIR + DATA_DIR + "madis/"
+GISC_DATA = WWW_DIR + DATA_DIR + "gisc/"
+STATION_TXT = "station_list.txt"
+CHARSET = "utf-8"
+tmpdir = "/tmp"
+INDENT = 4
+SUMMARY = "summary.geojson.br"
 
 # after 3 days move to processed
 KEEP_MADIS_PROCESSED_FILES = 86400 * 3
