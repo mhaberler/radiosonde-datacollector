@@ -283,8 +283,11 @@ def main():
         default=config.MAX_DAYS_IN_SUMMARY,
         help="number of days of history to keep in summary",
     )
+    parser.add_argument("--tmpdir", action="store", default=None)
 
     args = parser.parse_args()
+    if args.tmpdir:
+        config.tmpdir = args.tmpdir
     level = logging.WARNING
     if args.verbose:
         level = logging.DEBUG
