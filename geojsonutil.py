@@ -27,10 +27,6 @@ def write_geojson(args, source, fc, fn, archive, updated_stations):
 
     updated_stations.append((station_id, fc.properties))
 
-    cext = ""
-    if args.brotli:
-        cext = ".br"
-
     cc = station_id[:2]
     subdir = station_id[2:5]
 
@@ -44,7 +40,7 @@ def write_geojson(args, source, fc, fn, archive, updated_stations):
 
     dest = (
         f"{args.destdir}/{source}/{cc}/{subdir}/"
-        f"{year}/{month}/{station_id}_{day}_{time}.geojson{cext}"
+        f"{year}/{month}/{station_id}_{day}_{time}.geojson.br"
     )
     ref = f"{source}/{cc}/{subdir}/" f"{year}/{month}/{station_id}_{day}_{time}.geojson"
 
