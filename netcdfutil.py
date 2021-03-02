@@ -163,8 +163,8 @@ def RemNaN_and_Interp(raob, file):
                     # logging.info(f"Pm={Pm} v={v} P={P}")
                     raise
 
-                U = U * 1.94384
-                V = V * 1.94384
+                # U = U * 1.94384
+                # V = V * 1.94384
 
                 Pqc, Tqc, Tdqc, Uqc, Vqc = basic_qc(P, T, Td, U, V)
 

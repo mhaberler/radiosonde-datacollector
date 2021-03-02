@@ -39,4 +39,4 @@ KEEP_MADIS_PROCESSED_FILES = 86400 * 3
 
 # added to featurecollection.properties.fmt = FORMAT_VERSION
 # 4 - using deep subdirs year/month under station
-FORMAT_VERSION = 4
+FORMAT_VERSION = 5
