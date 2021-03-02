@@ -428,7 +428,7 @@ def process_files(args, flist, station_dict, updated_stations):
             logging.debug(f"processing BUFR: {f}")
             success, d = process_bufr(args, source, file, f, None)
             if success:
-                success = gen_output(args, source, d, fn, zip, updated_stations)
+                success = gen_output(args, source, d, fn, None, updated_stations)
 
             file.close()
             if success and not args.ignore_timestamps:
