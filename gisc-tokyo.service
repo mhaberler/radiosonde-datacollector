@@ -1,0 +1,19 @@
+[Unit]
+Description=GISC Tokyo BUFR fetcher
+
+[Service]
+
+User=sondehub
+
+#we assume the full service as active one the script was started
+Type=simple
+
+#where to find the executable
+ExecStart=/home/sondehub/gisc-tokyo.sh
+
+#what you want: make sure it always is running
+Restart=always
+
+[Install]
+#which service wants this to run - default.target is just it is loaded by default
+WantedBy=default.target
