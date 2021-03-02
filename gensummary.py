@@ -129,7 +129,7 @@ def walkt_tree(toplevel, directory, pattern, after):
         else:
             if idtype == 'unregistered':
                 if stid not in missing:
-                    locations = rg.search((st["lat"], st["lon"]))
+                    locations = rg.search((st["lat"], st["lon"]),  verbose=False)
                     if locations:
                         print(stid, locations, st["lat"], st["lon"], st["elevation"],file=sys.stderr)
                         loc = locations[0]
