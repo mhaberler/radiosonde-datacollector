@@ -1,5 +1,4 @@
 import argparse
-import csv
 import gzip
 import json
 import logging
@@ -10,10 +9,8 @@ import sys
 import tempfile
 import time
 import zipfile
-from datetime import datetime
 from operator import itemgetter
 
-import brotli
 import geojson
 
 from geojsonutil import write_geojson
@@ -22,47 +19,16 @@ from bufrutil import convert_bufr_to_geojson, process_bufr
 
 from netcdfutil import process_netcdf
 
-from pidfile import *
+import pidfile
 
-from config import (
-    BROTLI_SUMMARY_QUALITY,
-    FAILED,
-    INCOMING,
-    KEEP_MADIS_PROCESSED_FILES,
-    MAX_ASCENT_AGE_IN_SUMMARY,
-    PROCESSED,
-    SPOOLDIR_GISC,
-    SPOOLDIR_GISC_TOKYO,
-    SPOOLDIR_MADIS,
-    TS_FAILED,
-    TS_PROCESSED,
-    TS_TIMESTAMP,
-    LOCKFILE,
-    FORMAT_VERSION
-)
+import config
+
+import util
 
 
 def gen_output(args, source, h, fn, archive, updated_stations):
     fc = convert_bufr_to_geojson(args, h)
     return write_geojson(args, source, fc, fn, archive, updated_stations)
-
-
-def read_summary(fn):
-    if os.path.exists(fn):
-        with open(fn, "rb") as f:
-            s = f.read()
-            if fn.endswith(".br"):
-                s = brotli.decompress(s)
-            summary = geojson.loads(s.decode())
-            logging.debug(f"read summary from {fn} (brotli={fn.endswith('.br')})")
-    else:
-        logging.debug(f"no summary file yet: {fn}")
-        summary = {}
-    return summary
-
-
-def now():
-    return datetime.utcnow().timestamp()
 
 
 def update_geojson_summary(args, stations, updated_stations, summary):
@@ -77,7 +43,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                 stations_with_ascents[st_id] = feature
 
     # remove entries from ascents which have a syn_timestamp less than cutoff_ts
-    cutoff_ts = now() - args.max_age
+    cutoff_ts = util.now() - args.max_age * 24 * 3600
 
     # now walk the updates
     for station, asc in updated_stations:
@@ -108,18 +74,27 @@ def update_geojson_summary(args, stations, updated_stations, summary):
             ident = stations_with_ascents[station]["properties"]["name"]
             if ident in stations:
                 # using WMO id as name. Probably mobile. Replace by string name.
-                stations_with_ascents[station]["properties"]["name"] = stations[ident]["name"]
+                stations_with_ascents[station]["properties"]["name"] = stations[ident][
+                    "name"
+                ]
 
             # overwrite the station coords by the coords of the last ascent
             # to properly handle mobile stations
             if asc["id_type"] == "mobile":
-                logging.debug(f"fix coords {station} -> {asc['lon']} {asc['lat']} {asc['elevation']}")
+                logging.debug(
+                    f"fix coords {station} -> {asc['lon']} {asc['lat']} {asc['elevation']}"
+                )
                 properties = stations_with_ascents[station]["properties"]
                 stations_with_ascents[station] = geojson.Feature(
-                        geometry=geojson.Point((round(asc["lon"], 6),
-                                                round(asc["lat"], 6),
-                                                round(asc["elevation"], 1))),
-                        properties=properties)
+                    geometry=geojson.Point(
+                        (
+                            round(asc["lon"], 6),
+                            round(asc["lat"], 6),
+                            round(asc["elevation"], 1),
+                        )
+                    ),
+                    properties=properties,
+                )
 
         else:
             # station appears with first-time ascent
@@ -139,104 +114,78 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                 coords = (asc["lon"], asc["lat"], asc["elevation"])
                 properties["name"] = asc["station_id"]
 
-                if re.match(r"^\d{5}$",station):
+                if re.match(r"^\d{5}$", station):
                     # WMO id syntax, but not in station_list
                     # hence an unregistered but fixed station
-                    properties["id_type"] =  'unregistered'
+                    properties["id_type"] = "unregistered"
                 else:
                     # looks like weather ship
-                    properties["id_type"] =  'mobile'
-
+                    properties["id_type"] = "mobile"
 
             stations_with_ascents[station] = geojson.Feature(
                 geometry=geojson.Point(coords), properties=properties
             )
 
     # create GeoJSON summary
-    # dest given as "foo/summary.geojson"
-    dest = os.path.splitext(args.summary)[0]
-    # dest now 'foo/summary' or so
-
-    # slimmed version
     ns = na = 0
     fc = geojson.FeatureCollection([])
     fc.properties = {
-        "fmt":  FORMAT_VERSION,
-        "generated": int(now()),
-        "max_age" : args.max_age,
+        "fmt": config.FORMAT_VERSION,
+        "generated": int(util.now()),
+        "max_age": args.max_age * 24 * 3600,
     }
     for _st, f in stations_with_ascents.items():
         sid, stype = slimdown(f)
-        f.properties['station_id'] = sid
-        f.properties['id_type'] = stype
+        f.properties["station_id"] = sid
+        f.properties["id_type"] = stype
         ns += 1
         na += len(f.properties["ascents"])
         fc.features.append(f)
-    gj = geojson.dumps(fc, indent=4)
-    logging.debug(f"slim summary {dest}: {ns} active stations, {na} ascents")
-    gen_br_file(gj, args.tmpdir, dest) # + "-slim")
-    return
+
+    logging.debug(f"summary {args.summary}: {ns} active stations, {na} ascents")
+
+    useBrotli = args.summary.endswith(".br")
+    util.write_json_file(fc, args.summary, useBrotli=useBrotli, asGeojson=True)
+
 
 def slimdown(st):
     ascents = st.properties["ascents"]
     try:
-        result = st.properties['station_id'], st.properties['id_type']
-    except KeyError as e:
-        result = ascents[0].properties['station_id'],ascents[0].properties['id_type']
+        result = st.properties["station_id"], st.properties["id_type"]
+    except KeyError:
+        result = ascents[0].properties["station_id"], ascents[0].properties["id_type"]
 
     for a in ascents:
-        a.pop('path', None)
-        a.pop('path_source', None)
-        a.pop('origin_member', None)
-        a.pop('origin_archive', None)
-        a.pop('firstSeen', None)
-        a.pop('lastSeen', None)
-        a.pop('fmt', None)
-        a.pop('sonde_type', None)
-        a.pop('sonde_serial', None)
-        a.pop('sonde_humcorr', None)
-        a.pop('sonde_psensor', None)
-        a.pop('sonde_tsensor', None)
-        a.pop('sonde_hsensor', None)
-        a.pop('sonde_gepot', None)
-        a.pop('sonde_track', None)
-        a.pop('sonde_measure', None)
-        a.pop('sonde_swversion', None)
-        a.pop('sonde_frequency', None)
+        a.pop("path", None)
+        a.pop("path_source", None)
+        a.pop("origin_member", None)
+        a.pop("origin_archive", None)
+        a.pop("firstSeen", None)
+        a.pop("lastSeen", None)
+        a.pop("fmt", None)
+        a.pop("sonde_type", None)
+        a.pop("sonde_serial", None)
+        a.pop("sonde_humcorr", None)
+        a.pop("sonde_psensor", None)
+        a.pop("sonde_tsensor", None)
+        a.pop("sonde_hsensor", None)
+        a.pop("sonde_gepot", None)
+        a.pop("sonde_track", None)
+        a.pop("sonde_measure", None)
+        a.pop("sonde_swversion", None)
+        a.pop("sonde_frequency", None)
 
-        if st.properties['id_type'] == 'wmo':
+        if st.properties["id_type"] == "wmo":
             # fixed station. Take coords from geometry.coords.
-            a.pop('lat', None)
-            a.pop('lon', None)
-            a.pop('elevation', None)
+            a.pop("lat", None)
+            a.pop("lon", None)
+            a.pop("elevation", None)
 
-        a.pop('station_id', None)
-        a.pop('id_type', None)
+        a.pop("station_id", None)
+        a.pop("id_type", None)
 
     return result
 
-def gen_br_file(gj, tmpdir, dest):
-    if not dest.endswith(".geojson"):
-        dest += ".geojson"
-    if not dest.endswith(".br"):
-        dest += ".br"
-    fd, path = tempfile.mkstemp(dir=tmpdir)
-    src = gj.encode("utf8")
-    start = time.time()
-    dst = brotli.compress(src, quality=BROTLI_SUMMARY_QUALITY)
-    end = time.time()
-    dt = end - start
-    sl = len(src)
-    dl = len(dst)
-    ratio = (1.0 - dl / sl) * 100.0
-    logging.debug(
-        f"summary {dest}: brotli {sl} -> {dl}, compression={ratio:.1f}% in {dt:.3f}s"
-    )
-    os.write(fd, dst)
-    os.fsync(fd)
-    os.close(fd)
-    os.rename(path, dest)
-    os.chmod(dest, 0o644)
 
 def newer(filename, ext):
     """
@@ -252,106 +201,10 @@ def newer(filename, ext):
     return os.path.getmtime(filename) > os.path.getmtime(target)
 
 
-def initialize_stations(txt_fn, json_fn):
-    US_STATES = [
-        "AK",
-        "AL",
-        "AR",
-        "AZ",
-        "CA",
-        "CO",
-        "CT",
-        "DE",
-        "FL",
-        "GA",
-        "HI",
-        "IA",
-        "ID",
-        "IL",
-        "IN",
-        "KS",
-        "LA",
-        "MA",
-        "MD",
-        "ME",
-        "MI",
-        "MN",
-        "MO",
-        "MS",
-        "MT",
-        "NC",
-        "ND",
-        "NE",
-        "NH",
-        "NJ",
-        "NM",
-        "NV",
-        "NY",
-        "OH",
-        "OK",
-        "OR",
-        "PA",
-        "RI",
-        "SC",
-        "SD",
-        "TN",
-        "TX",
-        "UT",
-        "VA",
-        "VT",
-        "WA",
-        "WI",
-        "WV",
-        "WY",
-    ]
-
-    stationdict = {}
-    with open(txt_fn, "r") as csvfile:
-        stndata = csv.reader(csvfile, delimiter="\t")
-        for row in stndata:
-            m = re.match(
-                r"(?P<stn_wmoid>^\w+)\s+(?P<stn_lat>\S+)\s+(?P<stn_lon>\S+)\s+(?P<stn_altitude>\S+)(?P<stn_name>\D+)",
-                row[0],
-            )
-            fields = m.groupdict()
-            stn_wmoid = fields["stn_wmoid"][6:]
-            stn_name = fields["stn_name"].strip()
-
-            if re.match(r"^[a-zA-Z]{2}\s", stn_name) and stn_name[:2] in US_STATES:
-                stn_name = stn_name[2:].strip().title() + ", " + stn_name[:2]
-            else:
-                stn_name = stn_name.title()
-            stn_name = fields["stn_name"].strip().title()
-            stn_lat = float(fields["stn_lat"])
-            stn_lon = float(fields["stn_lon"])
-            stn_altitude = float(fields["stn_altitude"])
-
-            if stn_altitude > -998.8:
-                stationdict[stn_wmoid] = {
-                    "name": stn_name,
-                    "lat": stn_lat,
-                    "lon": stn_lon,
-                    "elevation": stn_altitude,
-                }
-
-        with open(json_fn, "wb") as jfile:
-            j = json.dumps(stationdict, indent=4).encode("utf8")
-            jfile.write(j)
-
-
-def read_station_list(json_fn):
-
-    with open(json_fn, "rb") as f:
-        s = f.read().decode()
-        stations = json.loads(s)
-        logging.debug(f"read stations from {json_fn}")
-    return stations
-
-
 def process_files(args, flist, station_dict, updated_stations):
 
     for f in flist:
-        if not args.ignore_timestamps and not newer(f, TS_PROCESSED):
+        if not args.ignore_timestamps and not newer(f, config.TS_PROCESSED):
             logging.debug(f"skipping: {f}  (processed)")
             continue
 
@@ -366,7 +219,7 @@ def process_files(args, flist, station_dict, updated_stations):
                     for info in zf.infolist():
                         try:
                             data = zf.read(info.filename)
-                            fd, path = tempfile.mkstemp(dir=args.tmpdir)
+                            fd, path = tempfile.mkstemp(dir=config.tmpdir)
                             os.write(fd, data)
                             os.lseek(fd, 0, os.SEEK_SET)
                             file = os.fdopen(fd)
@@ -406,10 +259,8 @@ def process_files(args, flist, station_dict, updated_stations):
                 success = gen_output(args, source, d, fn, None, updated_stations)
 
             file.close()
-            if success and not args.ignore_timestamps:
-                pathlib.Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
-            if not success and not args.ignore_timestamps:
-                pathlib.Path(fn + ".failed").touch(mode=0o777, exist_ok=True)
+            if not args.ignore_timestamps:
+                gen_timestamp(fn, success)
 
         elif ext == ".gz":  # a gzipped netCDF file
             source = "madis"
@@ -423,19 +274,22 @@ def process_files(args, flist, station_dict, updated_stations):
 
             except gzip.BadGzipFile as e:
                 logging.error(f"{f}: {e}")
+                if not args.ignore_timestamps:
+                    gen_timestamp(fn, False)
 
             except OSError as e:
                 logging.error(f"{f}: {e}")
 
-            if not args.ignore_timestamps:
-                gen_timestamp(fn, success)
+            else:
+                if not args.ignore_timestamps:
+                    gen_timestamp(fn, success)
 
 
 def gen_timestamp(fn, success):
     if success:
-        pathlib.Path(fn + TS_PROCESSED).touch(mode=0o777, exist_ok=True)
+        pathlib.Path(fn + config.TS_PROCESSED).touch(mode=0o777, exist_ok=True)
     else:
-        pathlib.Path(fn + TS_FAILED).touch(mode=0o777, exist_ok=True)
+        pathlib.Path(fn + config.TS_FAILED).touch(mode=0o777, exist_ok=True)
 
 
 # the logging is ridiculous.
@@ -479,79 +333,79 @@ def move_files(
 
 def keep_house(args):
     move_files(
-        SPOOLDIR_MADIS + INCOMING,
+        config.SPOOLDIR_MADIS + config.INCOMING,
         "*.gz",
-        TS_PROCESSED,
-        SPOOLDIR_MADIS + PROCESSED,
+        config.TS_PROCESSED,
+        config.SPOOLDIR_MADIS + config.PROCESSED,
         keeptime=args.keep_time,
         trace=args.verbose,
         simulate=args.sim_housekeep,
     )
     move_files(
-        SPOOLDIR_MADIS + INCOMING,
+        config.SPOOLDIR_MADIS + config.INCOMING,
         "*.gz",
-        TS_FAILED,
-        SPOOLDIR_MADIS + FAILED,
+        config.TS_FAILED,
+        config.SPOOLDIR_MADIS + config.FAILED,
         keeptime=0,
         trace=args.verbose,
         simulate=args.sim_housekeep,
     )
 
     move_files(
-        SPOOLDIR_GISC + INCOMING,
+        config.SPOOLDIR_GISC + config.INCOMING,
         "*.zip",
-        TS_FAILED,
-        SPOOLDIR_GISC + FAILED,
+        config.TS_FAILED,
+        config.SPOOLDIR_GISC + config.FAILED,
         keeptime=0,
         trace=args.verbose,
         simulate=args.sim_housekeep,
     )
     move_files(
-        SPOOLDIR_GISC + INCOMING,
+        config.SPOOLDIR_GISC + config.INCOMING,
         "*.zip",
-        TS_TIMESTAMP,
-        SPOOLDIR_GISC + PROCESSED,
+        config.TS_TIMESTAMP,
+        config.SPOOLDIR_GISC + config.PROCESSED,
         keeptime=0,
         trace=args.verbose,
         simulate=args.sim_housekeep,
     )
     move_files(
-        SPOOLDIR_GISC + INCOMING,
+        config.SPOOLDIR_GISC + config.INCOMING,
         "*.zip",
-        TS_PROCESSED,
-        SPOOLDIR_GISC + PROCESSED,
-        keeptime=0,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
-    #-----
-    move_files(
-        SPOOLDIR_GISC_TOKYO + INCOMING,
-        "*.bufr",
-        TS_FAILED,
-        SPOOLDIR_GISC_TOKYO + FAILED,
+        config.TS_PROCESSED,
+        config.SPOOLDIR_GISC + config.PROCESSED,
         keeptime=0,
         trace=args.verbose,
         simulate=args.sim_housekeep,
     )
     move_files(
-        SPOOLDIR_GISC_TOKYO + INCOMING,
+        config.SPOOLDIR_GISC_TOKYO + config.INCOMING,
         "*.bufr",
-        TS_TIMESTAMP,
-        SPOOLDIR_GISC_TOKYO + PROCESSED,
+        config.TS_FAILED,
+        config.SPOOLDIR_GISC_TOKYO + config.FAILED,
         keeptime=0,
         trace=args.verbose,
         simulate=args.sim_housekeep,
     )
     move_files(
-        SPOOLDIR_GISC_TOKYO + INCOMING,
+        config.SPOOLDIR_GISC_TOKYO + config.INCOMING,
         "*.bufr",
-        TS_PROCESSED,
-        SPOOLDIR_GISC + PROCESSED,
+        config.TS_TIMESTAMP,
+        config.SPOOLDIR_GISC_TOKYO + config.PROCESSED,
         keeptime=0,
         trace=args.verbose,
         simulate=args.sim_housekeep,
     )
+    move_files(
+        config.SPOOLDIR_GISC_TOKYO + config.INCOMING,
+        "*.bufr",
+        config.TS_PROCESSED,
+        config.SPOOLDIR_GISC + config.PROCESSED,
+        keeptime=0,
+        trace=args.verbose,
+        simulate=args.sim_housekeep,
+    )
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -574,18 +428,11 @@ def main():
     )
     parser.add_argument("--geojson", action="store_true", default=False)
     parser.add_argument("--dump-geojson", action="store_true", default=False)
-    parser.add_argument("--brotli", action="store_true", default=False)
     parser.add_argument(
         "--sim-housekeep",
         action="store_true",
         default=False,
         help="just list what would happen to spooldirs; no input file processing",
-    )
-    parser.add_argument(
-        "--deep",
-        action="store_true",
-        default=True,
-        help="use year/month subdirs under station dir",
     )
     parser.add_argument("--only-args", action="store_true", default=False)
     parser.add_argument("--summary", action="store", required=True)
@@ -601,20 +448,27 @@ def main():
         required=True,
         help="path to station_list.json file",
     )
-    parser.add_argument("--tmpdir", action="store", default="/tmp")
+    parser.add_argument("--tmpdir", action="store", default=None)
     parser.add_argument(
-        "--max-age", action="store", type=int, default=MAX_ASCENT_AGE_IN_SUMMARY
+        "--max-age",
+        action="store",
+        type=int,
+        default=config.MAX_DAYS_IN_SUMMARY,
+        help="number of days of history to keep in summary",
     )
     parser.add_argument(
         "--keep-time",
         action="store",
         type=int,
-        default=KEEP_MADIS_PROCESSED_FILES,
+        default=config.KEEP_MADIS_PROCESSED_FILES,
         help="time in secs to retain processed .gz files in MADIS incoming spooldir",
     )
     parser.add_argument("files", nargs="*")
 
     args = parser.parse_args()
+    if args.tmpdir:
+        config.tmpdir = args.tmpdir
+
     level = logging.WARNING
     if args.verbose:
         level = logging.DEBUG
@@ -623,22 +477,36 @@ def main():
     os.umask(0o22)
 
     try:
-        with Pidfile(LOCKFILE,
-                     log=logging.debug,
-                     warn=logging.debug):
-            station_dict = read_station_list(args.stations)
+        with pidfile.Pidfile(config.LOCKFILE, log=logging.debug, warn=logging.debug):
+
+            station_dict = json.loads(util.read_file(args.stations).decode())
             updated_stations = []
-            summary = read_summary(args.summary)
-            if not summary:
-                # try brotlified version
-                summary = read_summary(args.summary + ".br")
+
+            useBrotli = args.summary.endswith(".br")
+            summary = util.read_json_file(
+                args.summary, useBrotli=useBrotli, asGeojson=True
+            )
 
             if args.only_args:
                 flist = args.files
             else:
-                l = list(pathlib.Path(SPOOLDIR_GISC + INCOMING).glob("*.zip"))
-                l.extend(list(pathlib.Path(SPOOLDIR_GISC_TOKYO + INCOMING).glob("*.bufr")))
-                l.extend(list(pathlib.Path(SPOOLDIR_MADIS + INCOMING).glob("*.gz")))
+                l = list(
+                    pathlib.Path(config.SPOOLDIR_GISC + config.INCOMING).glob("*.zip")
+                )
+                l.extend(
+                    list(
+                        pathlib.Path(config.SPOOLDIR_GISC_TOKYO + config.INCOMING).glob(
+                            "*.bufr"
+                        )
+                    )
+                )
+                l.extend(
+                    list(
+                        pathlib.Path(config.SPOOLDIR_MADIS + config.INCOMING).glob(
+                            "*.gz"
+                        )
+                    )
+                )
                 flist = [str(f) for f in l]
 
             # work the backlog
@@ -654,9 +522,10 @@ def main():
                 keep_house(args)
             return 0
 
-    except ProcessRunningException:
-        print("the pid file is in use, oops.", file=sys.stderr)
+    except pidfile.ProcessRunningException:
+        logging.warning(f"the pid file {config.LOCKFILE} is in use, exiting.")
         return -1
+
 
 if __name__ == "__main__":
     sys.exit(main())

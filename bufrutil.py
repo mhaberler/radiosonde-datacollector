@@ -50,10 +50,9 @@ def geopotential_height_to_height(gph):
     )
 
 
-def bufr_decode(f, fn, archive, args,
-                fakeTimes=True,
-                fakeDisplacement=True,
-                logFixup=True):
+def bufr_decode(
+    f, fn, archive, args, fakeTimes=True, fakeDisplacement=True, logFixup=True
+):
     ibufr = codes_bufr_new_from_file(f)
     if not ibufr:
         raise BufrUnreadableError("empty file", fn, archive)
@@ -66,8 +65,7 @@ def bufr_decode(f, fn, archive, args,
         num_samples = codes_get_array(ibufr, k)[0]
     except Exception as e:
         codes_release(ibufr)
-        raise MissingKeyError(
-            k, message=f"cant determine number of samples: {e}")
+        raise MissingKeyError(k, message=f"cant determine number of samples: {e}")
 
     # BAIL HERE if no num_samples
 
@@ -108,7 +106,7 @@ def bufr_decode(f, fn, archive, args,
         "typicalDate",
         "typicalTime",
         "text",
-        "softwareVersionNumber"
+        "softwareVersionNumber",
     ]
 
     for k in ivals + fvals + svals:
@@ -214,8 +212,7 @@ def bufr_decode(f, fn, archive, args,
 
 def bufr_qc(args, h, s, fn, archive):
     if len(s) < 10:
-        logging.info(
-            f"QC: skipping {fn} from {archive} - only {len(s)} samples")
+        logging.info(f"QC: skipping {fn} from {archive} - only {len(s)} samples")
         return False
 
     # QC here!
@@ -300,7 +297,9 @@ def convert_bufr_to_geojson(args, h):
     add_if_present(properties, h, "sonde_type", "radiosondeType")
     add_if_present(properties, h, "sonde_serial", "radiosondeSerialNumber")
     add_if_present(properties, h, "sonde_frequency", "radiosondeOperatingFrequency")
-    add_if_present(properties, h, "sonde_humcorr", "correctionAlgorithmsForHumidityMeasurements")
+    add_if_present(
+        properties, h, "sonde_humcorr", "correctionAlgorithmsForHumidityMeasurements"
+    )
 
     add_if_present(properties, h, "sonde_psensor", "pressureSensorType")
     add_if_present(properties, h, "sonde_tsensor", "temperatureSensorType")
@@ -321,7 +320,7 @@ def convert_bufr_to_geojson(args, h):
     else:
         # take height of first sample
         gph = samples[0]["nonCoordinateGeopotentialHeight"]
-        properties["elevation"] = round(geopotential_height_to_height(gph),2)
+        properties["elevation"] = round(geopotential_height_to_height(gph), 2)
 
     fc = geojson.FeatureCollection([])
     fc.properties = properties
@@ -346,17 +345,16 @@ def convert_bufr_to_geojson(args, h):
 
         properties = {
             "time": sampleTime.timestamp(),
-            "gpheight": round(gpheight,2),
-            "temp": round(s["airTemperature"],2),
-            "dewpoint": round(s["dewpointTemperature"],2),
-            "pressure": round(s["pressure"] / 100.,2),
-            "wind_u": round(u,2),
-            "wind_v": round(v,2),
+            "gpheight": round(gpheight, 2),
+            "temp": round(s["airTemperature"], 2),
+            "dewpoint": round(s["dewpointTemperature"], 2),
+            "pressure": round(s["pressure"] / 100.0, 2),
+            "wind_u": round(u, 2),
+            "wind_v": round(v, 2),
         }
         f = geojson.Feature(
-            geometry=geojson.Point((round(lon,6),
-                                    round(lat,6),
-                                    round(height,2))), properties=properties
+            geometry=geojson.Point((round(lon, 6), round(lat, 6), round(height, 2))),
+            properties=properties,
         )
         fc.features.append(f)
     fc.properties["lastSeen"] = sampleTime.timestamp()
