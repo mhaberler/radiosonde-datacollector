@@ -12,6 +12,7 @@ from config import FORMAT_VERSION
 
 
 def write_geojson(args, source, fc, fn, archive, updated_stations):
+    fc.properties["processed"] = int(datetime.utcnow().timestamp())
     fc.properties["origin_member"] = pathlib.PurePath(fn).name
     if archive:
         fc.properties["origin_archive"] = pathlib.PurePath(archive).name
