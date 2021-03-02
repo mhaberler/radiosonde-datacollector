@@ -547,7 +547,34 @@ def keep_house(args):
         trace=args.verbose,
         simulate=args.sim_housekeep,
     )
-
+    #-----
+    move_files(
+        SPOOLDIR_GISC_TOKYO + INCOMING,
+        "*.bufr",
+        TS_FAILED,
+        SPOOLDIR_GISC_TOKYO + FAILED,
+        keeptime=0,
+        trace=args.verbose,
+        simulate=args.sim_housekeep,
+    )
+    move_files(
+        SPOOLDIR_GISC_TOKYO + INCOMING,
+        "*.bufr",
+        TS_TIMESTAMP,
+        SPOOLDIR_GISC_TOKYO + PROCESSED,
+        keeptime=0,
+        trace=args.verbose,
+        simulate=args.sim_housekeep,
+    )
+    move_files(
+        SPOOLDIR_GISC_TOKYO + INCOMING,
+        "*.bufr",
+        TS_PROCESSED,
+        SPOOLDIR_GISC + PROCESSED,
+        keeptime=0,
+        trace=args.verbose,
+        simulate=args.sim_housekeep,
+    )
 
 def main():
     parser = argparse.ArgumentParser(
@@ -633,6 +660,7 @@ def main():
                 flist = args.files
             else:
                 l = list(pathlib.Path(SPOOLDIR_GISC + INCOMING).glob("*.zip"))
+                l.extend(list(pathlib.Path(SPOOLDIR_GISC_TOKYO + INCOMING).glob("*.bufr")))
                 l.extend(list(pathlib.Path(SPOOLDIR_MADIS + INCOMING).glob("*.gz")))
                 flist = [str(f) for f in l]
 
