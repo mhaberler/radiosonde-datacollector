@@ -434,6 +434,8 @@ def process_files(args, flist, station_dict, updated_stations):
             file.close()
             if success and not args.ignore_timestamps:
                 pathlib.Path(fn + ".timestamp").touch(mode=0o777, exist_ok=True)
+            if not success and not args.ignore_timestamps:
+                pathlib.Path(fn + ".failed").touch(mode=0o777, exist_ok=True)
 
         elif ext == ".gz":  # a gzipped netCDF file
             source = "madis"
