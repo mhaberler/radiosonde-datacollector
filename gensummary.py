@@ -144,9 +144,9 @@ def walkt_tree(toplevel, directory, pattern, after):
             continue
 
         # print(stid, day, tim, datetime.fromtimestamp(ts, pytz.utc))
-        if toplevel.endswith("madis"):
+        if toplevel.endswith("madis/"):
             typus = "netCDF"
-        if toplevel.endswith("gisc"):
+        if toplevel.endswith("gisc/"):
             typus = "BUFR"
         entry = {"source": typus, "syn_timestamp": int(ts)}
         gj = None
