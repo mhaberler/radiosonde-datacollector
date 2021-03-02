@@ -14,6 +14,7 @@ MAX_ASCENT_AGE_IN_SUMMARY = 14 * 3600 * 24
 
 SPOOLDIR_MADIS = r"/var/spool/madis/"
 SPOOLDIR_GISC = r"/var/spool/gisc/"
+SPOOLDIR_GISC_TOKYO = r"/var/spool/gisc-tokyo/"
 PROCESSED = r"processed"
 FAILED = r"failed"
 INCOMING = r"incoming"
