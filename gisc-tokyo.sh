@@ -1,7 +1,7 @@
 #!/bin/sh
 #set -x
 ### Configuration ###
-atomURL="https://www.wis-jma.go.jp/data/syn?ContentType=Text&Category=Upper air&Type=BUFR&Access=Open&Subcategory=TEMP&Subcategory=TEMP DROP&Subcategory=TEMP MOBIL&Subcategory=TEMP SHIP"
+atomURL="https://www.wis-jma.go.jp/data/syn?ContentType=Text&Category=Upper air&Type=BUFR&Access=Open&Subcategory=TEMP&Subcategory=TEMP MOBIL&Subcategory=TEMP SHIP"
 userName=""
 userPassword=""
 limitSpeed="1m"
