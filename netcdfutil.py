@@ -279,6 +279,8 @@ def emit_ascents(args, source, file, archive, raob, stations):
         h0 = staElev[i]
 
         prevSecsIntoFlight = 0
+
+        logging.debug(f"station {stn}: samples={len(P[i])}")
         for n in range(0, len(P[i])):
             pn = P[i][n]
 

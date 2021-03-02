@@ -422,7 +422,7 @@ def process_files(args, flist, station_dict, updated_stations):
                 if not args.ignore_timestamps:
                     gen_timestamp(fn, False)
 
-        elif ext == ".bin":  # a singlle BUFR file
+        elif (ext == ".bin") or (ext == ".bufr"):  # a singlle BUFR file
             source = "gisc"
             file = open(f, "rb")
             logging.debug(f"processing BUFR: {f}")
@@ -580,7 +580,7 @@ def main():
     parser.add_argument(
         "--deep",
         action="store_true",
-        default=False,
+        default=True,
         help="use year/month subdirs under station dir",
     )
     parser.add_argument("--only-args", action="store_true", default=False)
