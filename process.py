@@ -339,39 +339,13 @@ def initialize_stations(txt_fn, json_fn):
             jfile.write(j)
 
 
-def update_station_list(txt_fn):
-    """
-    fn is expected to look like <path>/station_list.txt
-    if a corresponding <path>/station_list.json file exists and is newer:
-        read that
-
-    if the corresponding <path>/station_list.json is older or does not exist:
-        read and parse the .txt file
-        generate the station_list.json
-        read that
-
-    return the station fn and dict
-    """
-    (base, ext) = os.path.splitext(txt_fn)
-    if ext != ".txt":
-        raise ValueError("expecting .txt extension:", txt_fn)
-
-    json_fn = base + ".json"
-
-    # read the station_list.json file
-    # create or update on the fly if needed from station_list.txt (same dir assumed)
-    if newer(txt_fn, ".json"):
-        # rebuild the json file
-        logging.debug(f"rebuilding {json_fn} from {txt_fn}")
-
-        initialize_stations(txt_fn, json_fn)
-        logging.debug(f"rebuilt {json_fn} from {txt_fn}")
+def read_station_list(json_fn):
 
     with open(json_fn, "rb") as f:
         s = f.read().decode()
         stations = json.loads(s)
         logging.debug(f"read stations from {json_fn}")
-    return json_fn, stations
+    return stations
 
 
 def process_files(args, flist, station_dict, updated_stations):
@@ -625,7 +599,7 @@ def main():
         "--stations",
         action="store",
         required=True,
-        help="path to station_list.txt file",
+        help="path to station_list.json file",
     )
     parser.add_argument("--tmpdir", action="store", default="/tmp")
     parser.add_argument(
@@ -652,7 +626,7 @@ def main():
         with Pidfile(LOCKFILE,
                      log=logging.debug,
                      warn=logging.debug):
-            station_fn, station_dict = update_station_list(args.stations)
+            station_dict = read_station_list(args.stations)
             updated_stations = []
             summary = read_summary(args.summary)
             if not summary:
