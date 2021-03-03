@@ -56,7 +56,6 @@ def update_geojson_summary(args, stations, updated_stations, summary):
 
             pruned = [x for x in oldlist if x["syn_timestamp"] > cutoff_ts]
 
-            logging.debug(f"pruning {station}: {len(oldlist)} -> {len(pruned)}")
 
             newlist = sorted(pruned, key=itemgetter("syn_timestamp"), reverse=True)
             # https://stackoverflow.com/questions/9427163/remove-duplicate-dict-in-list-in-python
@@ -68,6 +67,8 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                 if t not in seen:
                     seen.add(t)
                     dedup.append(d)
+
+            logging.debug(f"pruning {station}: {len(oldlist)} -> {len(dedup)}")
             stations_with_ascents[station]["properties"]["ascents"] = dedup
 
             # fixup the name if it was added to station_list.json:
