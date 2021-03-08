@@ -23,6 +23,8 @@ import pidfile
 
 import config
 
+import customtypes
+
 import util
 
 
@@ -202,7 +204,7 @@ def newer(filename, ext):
     return os.path.getmtime(filename) > os.path.getmtime(target)
 
 
-def process_files(args, flist, station_dict, updated_stations):
+def process_files(args, flist, updated_stations):
 
     for f in flist:
         if not args.ignore_timestamps and not newer(f, config.TS_PROCESSED):
@@ -267,7 +269,7 @@ def process_files(args, flist, station_dict, updated_stations):
             source = "madis"
             logging.debug(f"processing netCDF: {f}")
             try:
-                success, results = process_netcdf(args, source, f, None, station_dict)
+                success, results = process_netcdf(args, source, f, None)
 
                 if success:
                     for fc, file, archive in results:
@@ -480,7 +482,7 @@ def main():
     try:
         with pidfile.Pidfile(config.LOCKFILE, log=logging.debug, warn=logging.debug):
 
-            station_dict = json.loads(util.read_file(args.stations).decode())
+            config.known_stations = json.loads(util.read_file(args.stations).decode())
             updated_stations = []
 
             useBrotli = args.summary.endswith(".br")
@@ -512,11 +514,11 @@ def main():
 
             # work the backlog
             if not args.sim_housekeep:
-                process_files(args, flist, station_dict, updated_stations)
+                process_files(args, flist, updated_stations)
 
             if not args.sim_housekeep and updated_stations:
                 logging.debug(f"creating GeoJSON summary: {args.summary}")
-                update_geojson_summary(args, station_dict, updated_stations, summary)
+                update_geojson_summary(args, config.known_stations, updated_stations, summary)
 
             if not args.only_args:
                 logging.debug("running housekeeping")
