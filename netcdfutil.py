@@ -19,20 +19,12 @@ from scipy.interpolate import interp1d
 
 from thermodynamics import barometric_equation_inv
 
+import util
+
 # ASCENT_RATE = 5  # m/s = 300m/min
 # earth_gravity = 9.80665
 # earth_avg_radius = 6371008.7714
 # mperdeg = 111320.0
-
-
-def winds_to_UV(windSpeeds, windDirection):
-    u = []
-    v = []
-    for i, wdir in enumerate(windDirection):
-        rad = 4.0 * np.arctan(1) / 180.0
-        u.append(-windSpeeds[i] * np.sin(rad * wdir))
-        v.append(-windSpeeds[i] * np.cos(rad * wdir))
-    return np.array(u), np.array(v)
 
 
 def basic_qc(Ps, T, Td, U, V):
@@ -89,9 +81,11 @@ def RemNaN_and_Interp(raob, file):
         Ps = raob["Psig"][i]
         Ts = raob["Tsig"][i]
         Tds = raob["Tdsig"][i]
+
         Tm = raob["Tman"][i]
         Tdm = raob["Tdman"][i]
         Pm = raob["Pman"][i]
+
         Ws = raob["Wspeed"][i]
         Wd = raob["Wdir"][i]
 
@@ -130,38 +124,38 @@ def RemNaN_and_Interp(raob, file):
                 T = np.array(T)
                 Td = np.array(Td)
 
-                try:
-                    f = interp1d(Ptd, Td, kind="linear", fill_value="extrapolate")
-                    Td = f(P)
-                except FloatingPointError as e:
-                    logging.info(
-                        f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Ptd, Td"
-                    )
-                    # logging.info(f"Ptd={len(Ptd)} Td={len(Td)} Tdx={len(Tdx)}")
-                    # logging.info(f"Ptd={list(Ptd)} Td={list(Td)} P={list(P)}")
-
-                    raise
-                    # continue
-
-                try:
-                    f = interp1d(Pm, u, kind="linear", fill_value="extrapolate")
-                    U = f(P)
-                except FloatingPointError as e:
-                    logging.info(
-                        f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Pm, u"
-                    )
-                    # logging.info(f"Pm={Pm} u={u} P={P}")
-                    raise
-
-                try:
-                    f = interp1d(Pm, v, kind="linear", fill_value="extrapolate")
-                    V = f(P)
-                except FloatingPointError as e:
-                    logging.info(
-                        f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Pm, v"
-                    )
-                    # logging.info(f"Pm={Pm} v={v} P={P}")
-                    raise
+                # try:
+                #     f = interp1d(Ptd, Td, kind="linear", fill_value="extrapolate")
+                #     Td = f(P)
+                # except FloatingPointError as e:
+                #     logging.info(
+                #         f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Ptd, Td"
+                #     )
+                #     # logging.info(f"Ptd={len(Ptd)} Td={len(Td)} Tdx={len(Tdx)}")
+                #     # logging.info(f"Ptd={list(Ptd)} Td={list(Td)} P={list(P)}")
+                #
+                #     raise
+                #     # continue
+                #
+                # try:
+                #     f = interp1d(Pm, u, kind="linear", fill_value="extrapolate")
+                #     U = f(P)
+                # except FloatingPointError as e:
+                #     logging.info(
+                #         f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Pm, u"
+                #     )
+                #     # logging.info(f"Pm={Pm} u={u} P={P}")
+                #     raise
+                #
+                # try:
+                #     f = interp1d(Pm, v, kind="linear", fill_value="extrapolate")
+                #     V = f(P)
+                # except FloatingPointError as e:
+                #     logging.info(
+                #         f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Pm, v"
+                #     )
+                #     # logging.info(f"Pm={Pm} v={v} P={P}")
+                #     raise
 
                 # U = U * 1.94384
                 # V = V * 1.94384
@@ -199,22 +193,9 @@ def RemNaN_and_Interp(raob, file):
 
 
 # very simplistic
-
-
 def height2time(h0, height):
     hdiff = height - h0
     return hdiff / ASCENT_RATE
-
-
-def latlonPlusDisplacement(lat=0, lon=0, u=0, v=0):
-    # HeidiWare
-    dLat = v / mperdeg
-    dLon = u / (cos((lat + dLat / 2) / 180 * pi) * mperdeg)
-    return lat + dLat, lon + dLon
-
-
-def height_to_geopotential_height(height):
-    return earth_gravity / ((1 / height) + 1 / earth_avg_radius) / earth_gravity
 
 
 def emit_ascents(args, source, file, archive, raob, stations):
@@ -328,7 +309,7 @@ def emit_ascents(args, source, file, archive, raob, stations):
     return True, results
 
 
-def process_netcdf(args, source, file, archive, stationdict):
+def process_netcdf(args, source, file, archive, config.known_stations,):
 
     with gzip.open(file, "rb") as f:
         try:
