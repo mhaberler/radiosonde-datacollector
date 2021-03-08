@@ -40,3 +40,11 @@ KEEP_MADIS_PROCESSED_FILES = 86400 * 3
 # added to featurecollection.properties.fmt = FORMAT_VERSION
 # 4 - using deep subdirs year/month under station
 FORMAT_VERSION = 5
+
+
+# set in process.py, read-only
+known_stations = {}
+
+# for FM-35 files which do not have track info
+# not very reliable, so move to client
+GENERATE_PATHS = False
