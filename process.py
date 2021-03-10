@@ -65,7 +65,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
             dedup = []
             for d in newlist:
                 # keep an ascent of each source, even if same synop time
-                t = str(d["syn_timestamp"]) + d["source"]
+                t = str(d["syn_timestamp"]) + d["repfmt"]
                 if t not in seen:
                     seen.add(t)
                     dedup.append(d)
@@ -177,6 +177,10 @@ def slimdown(st):
         a.pop("sonde_measure", None)
         a.pop("sonde_swversion", None)
         a.pop("sonde_frequency", None)
+        a.pop("processed", None)
+        a.pop("encoding", None)
+#        a.pop("origin", None)
+        a.pop("encoding", None)
 
         if st.properties["id_type"] == "wmo":
             # fixed station. Take coords from geometry.coords.
@@ -206,26 +210,28 @@ def newer(filename, ext):
 
 def process_files(args, flist, updated_stations):
 
-    for f in flist:
-        if not args.ignore_timestamps and not newer(f, config.TS_PROCESSED):
-            logging.debug(f"skipping: {f}  (processed)")
+    for filename in flist:
+        if not args.ignore_timestamps and not newer(filename, config.TS_PROCESSED):
+            logging.debug(f"skipping: {filename}  (processed)")
             continue
 
-        (fn, ext) = os.path.splitext(f)
-        logging.debug(f"processing: {f} fn={fn} ext={ext}")
+        (fn, ext) = os.path.splitext(filename)
+        logging.debug(f"processing: {filename} fn={fn} ext={ext}")
 
         if ext == ".zip":  # a zip archive of BUFR files
             try:
-                with zipfile.ZipFile(f) as zf:
+                with zipfile.ZipFile(filename) as zf:
                     source = "gisc"
                     zip_success = True
                     for info in zf.infolist():
                         try:
+                            #https://docs.python.org/3/library/zipfile.html#zipinfo-objects
+                            #XXX ZipInfo.date_time
                             data = zf.read(info.filename)
                             fd, path = tempfile.mkstemp(dir=config.tmpdir)
                             os.write(fd, data)
                             os.lseek(fd, 0, os.SEEK_SET)
-                            file = os.fdopen(fd)
+                            infile = os.fdopen(fd)
                         except KeyError:
                             logging.error(
                                 f"zip file {f}: no such member {info.filename}"
@@ -236,57 +242,72 @@ def process_files(args, flist, updated_stations):
                                 f"processing BUFR: {f} member {info.filename} size={len(data)}"
                             )
                             success, d = process_bufr(
-                                args, source, file, info.filename, f
+                                args, source, infile, info.filename, filename
                             )
                             if success:
                                 success = gen_output(
-                                    args, source, d, info.filename, f, updated_stations
+                                    args, source, d, info.filename, filename, updated_stations
                                 )
                             zip_success = zip_success and success
-                            file.close()
+                            infile.close()
                             os.remove(path)
                     if not args.ignore_timestamps:
                         gen_timestamp(fn, zip_success)
 
             except zipfile.BadZipFile as e:
-                logging.error(f"{f}: {e}")
+                logging.error(f"{filename}: {e}")
                 if not args.ignore_timestamps:
                     gen_timestamp(fn, False)
 
         elif (ext == ".bin") or (ext == ".bufr"):  # a singlle BUFR file
             source = "gisc"
-            file = open(f, "rb")
-            logging.debug(f"processing BUFR: {f}")
-            success, d = process_bufr(args, source, file, f, None)
+            infile = open(filename, "rb")
+            logging.debug(f"processing BUFR: {filename}")
+            success, d = process_bufr(args, source, infile, filename, None)
             if success:
                 success = gen_output(args, source, d, fn, None, updated_stations)
 
-            file.close()
+            infile.close()
             if not args.ignore_timestamps:
                 gen_timestamp(fn, success)
 
         elif ext == ".gz":  # a gzipped netCDF file
-            source = "madis"
-            logging.debug(f"processing netCDF: {f}")
-            try:
-                success, results = process_netcdf(args, source, f, None)
+            repfmt = "fm35" # take from channel?
+            logging.debug(f"processing netCDF: {filename}")
+            arrived = util.age(filename)
+            with gzip.open(filename, "rb") as fd:
+                try:
+                    results = process_netcdf(fd,
+                                             origin="gisc-foo",
+                                             #filename=f,
+                                             #arrived=arrived,
+                                             #archive=None,
+                                             pathSource="simulated",
+                                             #source=source,
+                                             tagSamples=config.TAG_FM35)  
 
-                if success:
-                    for fc, file, archive in results:
-                        write_geojson(args, source, fc, file, archive, updated_stations)
-
-            except gzip.BadGzipFile as e:
-                logging.error(f"{f}: {e}")
-                if not args.ignore_timestamps:
-                    gen_timestamp(fn, False)
-
-            except OSError as e:
-                logging.error(f"{f}: {e}")
-
-            else:
-                if not args.ignore_timestamps:
-                    gen_timestamp(fn, success)
-
+                    for fc in results:
+                        util.set_metadata_from_dict(fc.properties, {
+                            "repfmt": repfmt,
+                            "channel": "madis",
+                            "archive" : None,
+                            "member" : "filename",
+                            "encoding": "netCDF"          
+                        })
+                        write_geojson(args, repfmt, fc,  updated_stations)
+                        
+                except gzip.BadGzipFile as e:
+                    logging.error(f"{filename}: {e}")
+                    if not args.ignore_timestamps:
+                        gen_timestamp(fn, False)
+                    
+                except OSError as e:
+                    logging.error(f"{filename}: {e}")
+                    
+                else:
+                    if not args.ignore_timestamps:
+                        gen_timestamp(fn, True)
+                        
 
 def gen_timestamp(fn, success):
     if success:
@@ -486,10 +507,14 @@ def main():
             updated_stations = []
 
             useBrotli = args.summary.endswith(".br")
-            summary = util.read_json_file(
-                args.summary, useBrotli=useBrotli, asGeojson=True
-            )
+            try:
+                summary = util.read_json_file(
+                    args.summary, useBrotli=useBrotli, asGeojson=True
+                )
 
+            except FileNotFoundError:
+                summary = {}
+                
             if args.only_args:
                 flist = args.files
             else:
@@ -514,6 +539,7 @@ def main():
 
             # work the backlog
             if not args.sim_housekeep:
+
                 process_files(args, flist, updated_stations)
 
             if not args.sim_housekeep and updated_stations:
