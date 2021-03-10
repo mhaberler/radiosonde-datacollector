@@ -24,6 +24,7 @@ import geojson
 
 from config import FAKE_TIME_STEPS, MAX_FLIGHT_DURATION
 
+import customtypes
 
 class MissingKeyError(Exception):
     def __init__(self, key, message="missing required key"):
@@ -274,21 +275,22 @@ def convert_bufr_to_geojson(args, h):
         ele = round(util.geopotential_height_to_height(gph), 2)
 
     properties = customtypes.DictNoNone()
-    u.set_metadata(properties,
-                   station=ident,
-                   # stationName=station_name,
-                   position=(h["longitude"], h["latitude"], ele),
-                   #filename=filename,
-                   #archive=archive,
-                   #arrived=arrived,
-                   synTime=int(int(ts)),
-                   relTime=int(takeoff.timestamp()),
-                   #sondTyp=int(sondTyp),
-                   origin=origin,
-                   path_source="origin",
-                   source="BUFR")
+    util.set_metadata(properties,
+                      station=ident,
+                      # stationName=station_name,
+                      position=(h["longitude"], h["latitude"], ele),
+                      #filename=filename,
+                      #archive=archive,
+                      #arrived=arrived,
+                      synTime=int(int(ts)),
+                      relTime=int(takeoff.timestamp()),
+                      #sondTyp=int(sondTyp),
+                      #origin=origin,
+                      repfmt="fm94",
+                      path_source="origin",
+                      source="BUFR")
 
-    u.set_metadata_from_dict(properties, h)
+    util.set_metadata_from_dict(properties, h)
 
     fc = geojson.FeatureCollection([])
     fc.properties = properties
