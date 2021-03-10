@@ -1,8 +1,5 @@
 import logging
 import warnings
-
-# warnings.filterwarnings("ignore")
-# np.seterr(all='raise')
 from datetime import datetime, timedelta
 
 from math import cos, sin
@@ -10,7 +7,7 @@ from string import punctuation
 
 import ciso8601
 
-from constants import earth_avg_radius, earth_gravity, rad
+import util
 
 from eccodes import (
     CODES_MISSING_DOUBLE,
@@ -40,14 +37,6 @@ class MissingKeyError(Exception):
 
 class BufrUnreadableError(Exception):
     pass
-
-
-# metpy is terminally slow, so roll our own sans dimension checking
-def geopotential_height_to_height(gph):
-    geopotential = gph * earth_gravity
-    return (geopotential * earth_avg_radius) / (
-        earth_gravity * earth_avg_radius - geopotential
-    )
 
 
 def bufr_decode(
@@ -238,13 +227,6 @@ def process_bufr(args, source, f, fn, archive):
         h["samples"] = s
         return result, h
 
-
-def wind_to_UV(windSpeed, windDirection):
-    u = -windSpeed * sin(rad * windDirection)
-    v = -windSpeed * cos(rad * windDirection)
-    return u, v
-
-
 def gen_id(h):
     bn = h.get("blockNumber", CODES_MISSING_LONG)
     sn = h.get("stationNumber", CODES_MISSING_LONG)
@@ -259,11 +241,6 @@ def gen_id(h):
             return ("mobile", h["shipOrMobileLandStationIdentifier"])
 
     return ("location", f"{h['latitude']:.3f}:{h['longitude']:.3f}")
-
-
-def add_if_present(d, h, name, bname):
-    if bname in h:
-        d[name] = h[bname]
 
 
 def convert_bufr_to_geojson(args, h):
@@ -283,44 +260,35 @@ def convert_bufr_to_geojson(args, h):
     ts = ciso8601.parse_datetime(
         h["typicalDate"] + " " + h["typicalTime"] + "-00:00"
     ).timestamp()
-
-    properties = {
-        "station_id": ident,
-        "id_type": typ,
-        "source": "BUFR",
-        "path_source": "origin",
-        "syn_timestamp": int(ts),
-        "firstSeen": takeoff.timestamp(),
-        "lat": round(h["latitude"], 6),
-        "lon": round(h["longitude"], 6),
-    }
-    add_if_present(properties, h, "sonde_type", "radiosondeType")
-    add_if_present(properties, h, "sonde_serial", "radiosondeSerialNumber")
-    add_if_present(properties, h, "sonde_frequency", "radiosondeOperatingFrequency")
-    add_if_present(
-        properties, h, "sonde_humcorr", "correctionAlgorithmsForHumidityMeasurements"
-    )
-
-    add_if_present(properties, h, "sonde_psensor", "pressureSensorType")
-    add_if_present(properties, h, "sonde_tsensor", "temperatureSensorType")
-    add_if_present(properties, h, "sonde_hsensor", "humiditySensorType")
-    add_if_present(properties, h, "sonde_gepot", "geopotentialHeightCalculation")
-    add_if_present(properties, h, "sonde_track", "trackingTechniqueOrStatusOfSystem")
-    add_if_present(properties, h, "sonde_measure", "measuringEquipmentType")
-    add_if_present(properties, h, "sonde_swversion", "softwareVersionNumber")
-    add_if_present(properties, h, "text", "text")
-
+    
     # try hard to determine a reasonable takeoff elevation value
     if "height" in h:
-        properties["elevation"] = h["height"]
+       ele = h["height"]
     elif "heightOfStationGroundAboveMeanSeaLevel" in h:
-        properties["elevation"] = h["heightOfStationGroundAboveMeanSeaLevel"]
+        ele = h["heightOfStationGroundAboveMeanSeaLevel"]
     elif "heightOfBarometerAboveMeanSeaLevel" in h:
-        properties["elevation"] = h["heightOfBarometerAboveMeanSeaLevel"]
+        ele = h["heightOfBarometerAboveMeanSeaLevel"]
     else:
         # take height of first sample
         gph = samples[0]["nonCoordinateGeopotentialHeight"]
-        properties["elevation"] = round(geopotential_height_to_height(gph), 2)
+        ele = round(util.geopotential_height_to_height(gph), 2)
+
+    properties = customtypes.DictNoNone()
+    u.set_metadata(properties,
+                   station=ident,
+                   # stationName=station_name,
+                   position=(h["longitude"], h["latitude"], ele),
+                   #filename=filename,
+                   #archive=archive,
+                   #arrived=arrived,
+                   synTime=int(int(ts)),
+                   relTime=int(takeoff.timestamp()),
+                   #sondTyp=int(sondTyp),
+                   origin=origin,
+                   path_source="origin",
+                   source="BUFR")
+
+    u.set_metadata_from_dict(properties, h)
 
     fc = geojson.FeatureCollection([])
     fc.properties = properties
@@ -336,14 +304,14 @@ def convert_bufr_to_geojson(args, h):
         delta = timedelta(seconds=s["timePeriod"])
         sampleTime = takeoff + delta
 
-        height = geopotential_height_to_height(gpheight)
+        height = util.geopotential_height_to_height(gpheight)
         if height < previous_elevation + args.hstep:
             continue
         previous_elevation = height
 
-        u, v = wind_to_UV(s["windSpeed"], s["windDirection"])
+        u, v = util.wind_to_UV(s["windSpeed"], s["windDirection"])
 
-        properties = {
+        properties = customtypes.DictNoNone(init={
             "time": sampleTime.timestamp(),
             "gpheight": round(gpheight, 2),
             "temp": round(s["airTemperature"], 2),
@@ -351,7 +319,7 @@ def convert_bufr_to_geojson(args, h):
             "pressure": round(s["pressure"] / 100.0, 2),
             "wind_u": round(u, 2),
             "wind_v": round(v, 2),
-        }
+        })
         f = geojson.Feature(
             geometry=geojson.Point((round(lon, 6), round(lat, 6), round(height, 2))),
             properties=properties,
