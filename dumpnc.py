@@ -5,6 +5,8 @@ from netCDF4 import Dataset
 
 import numpy as np
 
+import logging
+
 
 def dump_netcdf(f, station_name, station_ids):    
 
