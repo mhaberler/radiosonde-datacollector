@@ -54,3 +54,9 @@ GENERATE_PATHS = False
 # aids in debugging strange values
 # "mandatory", "sig_temp", "sig_wind", "max_wind"
 TAG_FM35 = True
+
+
+# minimum vertical distance of samples to be repored
+# hires BUFR files have a lot of samples
+HSTEP = 100
+
