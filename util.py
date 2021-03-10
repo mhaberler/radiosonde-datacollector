@@ -82,8 +82,8 @@ _mapping = {
     "radiosondeOperatingFrequency": "sonde_frequency",
     "correctionAlgorithmsForHumidityMeasurements": "sonde_humcorr",
 
-    "repfmt": None,# FM-35 FM-94
-    "channel": None,
+    "repfmt": None,      # FM-35 FM-94
+    "channel": None,     # "GISC Tokyo"
     "archive": "origin_archive",
     "encoding": None,    # netCDF BUFR
     "filename": "origin_member",
