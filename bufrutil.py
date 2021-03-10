@@ -1,11 +1,11 @@
 import logging
-import warnings
 from datetime import datetime, timedelta
 
-from math import cos, sin
 from string import punctuation
 
 import ciso8601
+
+import config
 
 import util
 
@@ -19,12 +19,10 @@ from eccodes import (
     codes_set,
 )
 
+import customtypes
 
 import geojson
 
-from config import FAKE_TIME_STEPS, MAX_FLIGHT_DURATION
-
-import customtypes
 
 class MissingKeyError(Exception):
     def __init__(self, key, message="missing required key"):
@@ -40,9 +38,7 @@ class BufrUnreadableError(Exception):
     pass
 
 
-def bufr_decode(
-    f, fn, archive, args, fakeTimes=True, fakeDisplacement=True, logFixup=True
-):
+def bufr_decode(f, fn, archive, fakeTimes=True, fakeDisplacement=True, logFixup=True):
     ibufr = codes_bufr_new_from_file(f)
     if not ibufr:
         raise BufrUnreadableError("empty file", fn, archive)
@@ -154,7 +150,7 @@ def bufr_decode(
                 continue
             else:
                 timePeriod = fakeTimeperiod
-                fakeTimeperiod += FAKE_TIME_STEPS
+                fakeTimeperiod += config.FAKE_TIME_STEPS
                 if k not in fixups:
                     logging.debug(
                         f"FIXUP timePeriod fakeTimes:{fakeTimes} fakeTimeperiod={fakeTimeperiod}"
@@ -200,7 +196,7 @@ def bufr_decode(
     return header, samples
 
 
-def bufr_qc(args, h, s, fn, archive):
+def bufr_qc(h, s, fn, archive):
     if len(s) < 10:
         logging.info(f"QC: skipping {fn} from {archive} - only {len(s)} samples")
         return False
@@ -215,18 +211,20 @@ def bufr_qc(args, h, s, fn, archive):
     return True
 
 
-def process_bufr(args, source, f, fn, archive):
+def process_bufr(f, filename=None, archive=None):
     try:
-        (h, s) = bufr_decode(f, fn, archive, args)
+        (h, s) = bufr_decode(f, filename, archive)
 
     except Exception as e:
-        logging.warning(f"exception processing {fn} e={e}")
+        logging.warning(f"exception processing {filename} e={e}")
         return False, None
 
     else:
-        result = bufr_qc(args, h, s, fn, archive)
+        if not bufr_qc(h, s, filename, archive):
+            return None
         h["samples"] = s
-        return result, h
+        return h
+
 
 def gen_id(h):
     bn = h.get("blockNumber", CODES_MISSING_LONG)
@@ -244,7 +242,7 @@ def gen_id(h):
     return ("location", f"{h['latitude']:.3f}:{h['longitude']:.3f}")
 
 
-def convert_bufr_to_geojson(args, h):
+def convert_bufr_to_geojson(h):
     takeoff = datetime(
         year=h["year"],
         month=h["month"],
@@ -261,10 +259,10 @@ def convert_bufr_to_geojson(args, h):
     ts = ciso8601.parse_datetime(
         h["typicalDate"] + " " + h["typicalTime"] + "-00:00"
     ).timestamp()
-    
+
     # try hard to determine a reasonable takeoff elevation value
     if "height" in h:
-       ele = h["height"]
+        ele = h["height"]
     elif "heightOfStationGroundAboveMeanSeaLevel" in h:
         ele = h["heightOfStationGroundAboveMeanSeaLevel"]
     elif "heightOfBarometerAboveMeanSeaLevel" in h:
@@ -275,20 +273,22 @@ def convert_bufr_to_geojson(args, h):
         ele = round(util.geopotential_height_to_height(gph), 2)
 
     properties = customtypes.DictNoNone()
-    util.set_metadata(properties,
-                      station=ident,
-                      # stationName=station_name,
-                      position=(h["longitude"], h["latitude"], ele),
-                      #filename=filename,
-                      #archive=archive,
-                      #arrived=arrived,
-                      synTime=int(int(ts)),
-                      relTime=int(takeoff.timestamp()),
-                      #sondTyp=int(sondTyp),
-                      #origin=origin,
-                      repfmt="fm94",
-                      path_source="origin",
-                      source="BUFR")
+    util.set_metadata(
+        properties,
+        station=ident,
+        # stationName=station_name,
+        position=(h["longitude"], h["latitude"], ele),
+        # filename=filename,
+        # archive=archive,
+        # arrived=arrived,
+        synTime=int(int(ts)),
+        relTime=int(takeoff.timestamp()),
+        # sondTyp=int(sondTyp),
+        # origin=origin,
+        repfmt="fm94",
+        path_source="origin",
+        encoding="BUFR",
+    )
 
     util.set_metadata_from_dict(properties, h)
 
@@ -296,7 +296,7 @@ def convert_bufr_to_geojson(args, h):
     fc.properties = properties
     lat_t = fc.properties["lat"]
     lon_t = fc.properties["lon"]
-    previous_elevation = fc.properties["elevation"] - args.hstep
+    previous_elevation = fc.properties["elevation"] - config.HSTEP
 
     for s in samples:
         lat = lat_t + s["latitudeDisplacement"]
@@ -307,30 +307,72 @@ def convert_bufr_to_geojson(args, h):
         sampleTime = takeoff + delta
 
         height = util.geopotential_height_to_height(gpheight)
-        if height < previous_elevation + args.hstep:
+        if height < (previous_elevation + config.HSTEP):
             continue
         previous_elevation = height
 
         u, v = util.wind_to_UV(s["windSpeed"], s["windDirection"])
 
-        properties = customtypes.DictNoNone(init={
-            "time": sampleTime.timestamp(),
-            "gpheight": round(gpheight, 2),
-            "temp": round(s["airTemperature"], 2),
-            "dewpoint": round(s["dewpointTemperature"], 2),
-            "pressure": round(s["pressure"] / 100.0, 2),
-            "wind_u": round(u, 2),
-            "wind_v": round(v, 2),
-        })
+        properties = customtypes.DictNoNone(
+            init={
+                "time": int(sampleTime.timestamp()),
+                "gpheight": round(gpheight, 2),
+                "temp": round(s["airTemperature"], 2),
+                "dewpoint": round(s["dewpointTemperature"], 2),
+                "pressure": round(s["pressure"] / 100.0, 2),
+                "wind_u": round(u, 2),
+                "wind_v": round(v, 2),
+            }
+        )
         f = geojson.Feature(
             geometry=geojson.Point((round(lon, 6), round(lat, 6), round(height, 2))),
             properties=properties,
         )
         fc.features.append(f)
-    fc.properties["lastSeen"] = sampleTime.timestamp()
+    fc.properties["lastSeen"] = int(sampleTime.timestamp())
 
     duration = fc.properties["lastSeen"] - fc.properties["firstSeen"]
-    if duration > MAX_FLIGHT_DURATION:
+    if duration > config.MAX_FLIGHT_DURATION:
         logging.error(f"unreasonably long flight: {(duration/3600):.1f} hours")
 
     return fc
+
+
+if __name__ == "__main__":
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(
+        description="extract ascent from netCDF file",
+        add_help=True,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", default=False)
+    parser.add_argument("-j", "--json", action="store_true", default=False)
+    parser.add_argument("-g", "--geojson", action="store_true", default=False)
+    parser.add_argument(
+        "--station-json",
+        action="store",
+        default="station_list.json",
+        help="path to known list of stations (JSON)",
+    )
+    parser.add_argument("files", nargs="*")
+    args = parser.parse_args()
+
+    level = logging.WARNING
+    if args.verbose:
+        level = logging.DEBUG
+    logging.basicConfig(level=level)
+
+    config.known_stations = json.loads(util.read_file(args.station_json).decode())
+    arrived = util.now()
+
+    for filename in args.files:
+        with open(filename, "rb") as f:
+            result = process_bufr(f, filename=filename, archive=None)
+        if args.json:
+            print(json.dumps(result, indent=4, cls=util.NumpyEncoder))
+
+        if args.geojson:
+            gj = convert_bufr_to_geojson(result)
+            print(json.dumps(gj, indent=4, cls=util.NumpyEncoder))
