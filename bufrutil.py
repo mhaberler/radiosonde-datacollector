@@ -38,7 +38,12 @@ class BufrUnreadableError(Exception):
     pass
 
 
-def bufr_decode(f, fn, archive, fakeTimes=True, fakeDisplacement=True, logFixup=True):
+def bufr_decode(f, filename, archive,
+                arrived=None,
+                fakeTimes=True,
+                fakeDisplacement=True,
+                logFixup=True):
+    
     ibufr = codes_bufr_new_from_file(f)
     if not ibufr:
         raise BufrUnreadableError("empty file", fn, archive)
@@ -91,7 +96,6 @@ def bufr_decode(f, fn, archive, fakeTimes=True, fakeDisplacement=True, logFixup=
         "radiosondeSerialNumber",
         "typicalDate",
         "typicalTime",
-        "text",
         "softwareVersionNumber",
     ]
 
@@ -112,8 +116,8 @@ def bufr_decode(f, fn, archive, fakeTimes=True, fakeDisplacement=True, logFixup=
             logging.debug(f"missing header key={k} e={e}")
             missingHdrKeys += 1
 
-    # special-case warts we do not really care about
-    warts = ["shipOrMobileLandStationIdentifier"]
+    # special-case warts we do not really care about so do not log
+    warts = ["shipOrMobileLandStationIdentifier", "text"]
 
     for k in warts:
         try:
@@ -144,18 +148,19 @@ def bufr_decode(f, fn, archive, fakeTimes=True, fakeDisplacement=True, logFixup=
         k = "timePeriod"
         timePeriod = codes_get(ibufr, f"#{i}#{k}")
         if timePeriod == CODES_MISSING_LONG:
-
-            invalidSamples += 1
-            if not fakeTimes:
-                continue
-            else:
-                timePeriod = fakeTimeperiod
-                fakeTimeperiod += config.FAKE_TIME_STEPS
-                if k not in fixups:
-                    logging.debug(
-                        f"FIXUP timePeriod fakeTimes:{fakeTimes} fakeTimeperiod={fakeTimeperiod}"
-                    )
-                    fixups.append(k)
+            continue
+        
+            # invalidSamples += 1
+            # if not fakeTimes:
+            #     continue
+            # else:
+            #     timePeriod = fakeTimeperiod
+            #     fakeTimeperiod += config.FAKE_TIME_STEPS
+            #     if k not in fixups:
+            #         logging.debug(
+            #             f"FIXUP timePeriod fakeTimes:{fakeTimes} fakeTimeperiod={fakeTimeperiod}"
+            #         )
+            #         fixups.append(k)
 
         sample[k] = timePeriod
         replaceable = ["latitudeDisplacement", "longitudeDisplacement"]
@@ -167,19 +172,26 @@ def bufr_decode(f, fn, archive, fakeTimes=True, fakeDisplacement=True, logFixup=
                 if value != CODES_MISSING_DOUBLE:
                     sample[k] = value
                 else:
-                    if fakeDisplacement and k in replaceable:
-                        if k not in fixups:
-                            logging.debug(f"--FIXUP  key {k}")
-                            fixups.append(k)
-                        sample[k] = 0
-                    else:
-                        # logging.warning(f"--MISSING {i} key {k} ")
-                        sampleOK = False
-                        missingValues += 1
+                    sampleOK = False
+                    missingValues += 1
+                    break
+                    
+                    # if fakeDisplacement and k in replaceable:
+                    #     if k not in fixups:
+                    #         logging.debug(f"--FIXUP  key {k}")
+                    #         fixups.append(k)
+                    #     sample[k] = 0
+                    # else:
+                    #     # logging.warning(f"--MISSING {i} key {k} ")
+                    #     sampleOK = False
+                    #     missingValues += 1
+
+                        
             except Exception as e:
                 sampleOK = False
                 logging.debug(f"sample={i} key={k} e={e}, skipping")
                 missingValues += 1
+                break
 
         if sampleOK:
             samples.append(sample)
@@ -242,7 +254,11 @@ def gen_id(h):
     return ("location", f"{h['latitude']:.3f}:{h['longitude']:.3f}")
 
 
-def convert_bufr_to_geojson(h):
+def convert_bufr_to_geojson(h,
+                            filename=None,
+                            archive=None,
+                            arrived=None,
+                            channel=None):
     takeoff = datetime(
         year=h["year"],
         month=h["month"],
@@ -278,16 +294,16 @@ def convert_bufr_to_geojson(h):
         station=ident,
         # stationName=station_name,
         position=(h["longitude"], h["latitude"], ele),
-        # filename=filename,
-        # archive=archive,
-        # arrived=arrived,
+        filename=filename,
+        archive=archive,
+        arrived=arrived,
         synTime=int(int(ts)),
         relTime=int(takeoff.timestamp()),
-        # sondTyp=int(sondTyp),
         # origin=origin,
         repfmt="fm94",
         path_source="origin",
         encoding="BUFR",
+        channel=channel,
     )
 
     util.set_metadata_from_dict(properties, h)
@@ -350,12 +366,6 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
     parser.add_argument("-j", "--json", action="store_true", default=False)
     parser.add_argument("-g", "--geojson", action="store_true", default=False)
-    parser.add_argument(
-        "--station-json",
-        action="store",
-        default="station_list.json",
-        help="path to known list of stations (JSON)",
-    )
     parser.add_argument("files", nargs="*")
     args = parser.parse_args()
 
@@ -364,15 +374,15 @@ if __name__ == "__main__":
         level = logging.DEBUG
     logging.basicConfig(level=level)
 
-    config.known_stations = json.loads(util.read_file(args.station_json).decode())
     arrived = util.now()
 
     for filename in args.files:
         with open(filename, "rb") as f:
             result = process_bufr(f, filename=filename, archive=None)
-        if args.json:
-            print(json.dumps(result, indent=4, cls=util.NumpyEncoder))
 
-        if args.geojson:
-            gj = convert_bufr_to_geojson(result)
-            print(json.dumps(gj, indent=4, cls=util.NumpyEncoder))
+            if args.json:
+                print(json.dumps(result, indent=4, cls=util.NumpyEncoder))
+            
+            if args.geojson:
+                gj = convert_bufr_to_geojson(result, arrived=arrived, channel="gisc-foo")
+                print(json.dumps(gj, indent=4, cls=util.NumpyEncoder))
