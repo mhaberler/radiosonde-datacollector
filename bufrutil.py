@@ -374,15 +374,16 @@ if __name__ == "__main__":
         level = logging.DEBUG
     logging.basicConfig(level=level)
 
-    arrived = util.now()
 
     for filename in args.files:
         with open(filename, "rb") as f:
+
             result = process_bufr(f, filename=filename, archive=None)
 
             if args.json:
                 print(json.dumps(result, indent=4, cls=util.NumpyEncoder))
             
             if args.geojson:
+                arrived = util.age(filename)
                 gj = convert_bufr_to_geojson(result, arrived=arrived, channel="gisc-foo")
                 print(json.dumps(gj, indent=4, cls=util.NumpyEncoder))
