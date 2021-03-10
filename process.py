@@ -440,7 +440,7 @@ def main():
         "--hstep",
         action="store",
         type=int,
-        default=100,
+        default=None,
         help="generate output only if samples vary vertically more than hstep",
     )
     parser.add_argument("--destdir", action="store", default=".")
@@ -493,6 +493,9 @@ def main():
     if args.tmpdir:
         config.tmpdir = args.tmpdir
 
+    if args.hstep:
+        config.HSTEP = args.hstep
+        
     level = logging.WARNING
     if args.verbose:
         level = logging.DEBUG
