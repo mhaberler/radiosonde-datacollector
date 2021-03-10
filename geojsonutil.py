@@ -9,11 +9,8 @@ import config
 
 import util
 
-def write_geojson(args, source, fc, fn, archive, updated_stations):
-    fc.properties["processed"] = int(datetime.utcnow().timestamp())
-    fc.properties["origin_member"] = pathlib.PurePath(fn).name
-    if archive:
-        fc.properties["origin_archive"] = pathlib.PurePath(archive).name
+def write_geojson(args, repfmt, fc, updated_stations):
+
     station_id = fc.properties["station_id"]
 
     if args.station and args.station != station_id:
@@ -39,10 +36,10 @@ def write_geojson(args, source, fc, fn, archive, updated_stations):
     time = syn_time.strftime("%H%M%S")
 
     dest = (
-        f"{args.destdir}/{source}/{cc}/{subdir}/"
+        f"{args.destdir}/{repfmt}/{cc}/{subdir}/"
         f"{year}/{month}/{station_id}_{day}_{time}.geojson.br"
     )
-    ref = f"{source}/{cc}/{subdir}/" f"{year}/{month}/{station_id}_{day}_{time}.geojson"
+    ref = f"{repfmt}/{cc}/{subdir}/" f"{year}/{month}/{station_id}_{day}_{time}.geojson"
 
     path = pathlib.Path(dest).parent.absolute()
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
@@ -50,9 +47,15 @@ def write_geojson(args, source, fc, fn, archive, updated_stations):
     if not fc.is_valid:
         logging.error(f"--- invalid GeoJSON! {fc.errors()}")
         raise ValueError("invalid GeoJSON")
-
-    util.write_json_file(fc, dest, useBrotli=True, asGeojson=True)
-
+    try:
+        util.write_json_file(fc, dest, useBrotli=True, asGeojson=True)
+    except Exception as e:
+        print(f"e={e}")
+        pprint(fc.properties)
+        for f in fc.features:
+            pprint(f.geometry.coordinates)
+            pprint(f.properties)
+        
     fc.properties["path"] = ref
 
     if args.dump_geojson:
