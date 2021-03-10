@@ -299,10 +299,10 @@ if __name__ == "__main__":
     logging.basicConfig(level=level)
 
     config.known_stations = json.loads(u.read_file(args.station_json).decode())
-    arrived = u.now()
 
     for filename in args.files:
         with open(filename, "rb") as f:
+            arrived = int(util.age(filename))
             results = process_netcdf(f,
                                     station_name=args.station,
                                     origin=None,
