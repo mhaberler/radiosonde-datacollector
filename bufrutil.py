@@ -287,7 +287,7 @@ def convert_bufr_to_geojson(h,
         # take height of first sample
         gph = samples[0]["nonCoordinateGeopotentialHeight"]
         ele = round(util.geopotential_height_to_height(gph), 2)
-
+  
     properties = customtypes.DictNoNone()
     util.set_metadata(
         properties,
@@ -366,6 +366,12 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
     parser.add_argument("-j", "--json", action="store_true", default=False)
     parser.add_argument("-g", "--geojson", action="store_true", default=False)
+    parser.add_argument(
+        "--station-json",
+        action="store",
+        default='station_list.json',
+        help="path to known list of stations (JSON)",
+    )
     parser.add_argument("files", nargs="*")
     args = parser.parse_args()
 
@@ -374,6 +380,7 @@ if __name__ == "__main__":
         level = logging.DEBUG
     logging.basicConfig(level=level)
 
+    config.known_stations = json.loads(util.read_file(args.station_json).decode())
 
     for filename in args.files:
         with open(filename, "rb") as f:
@@ -384,6 +391,6 @@ if __name__ == "__main__":
                 print(json.dumps(result, indent=4, cls=util.NumpyEncoder))
             
             if args.geojson:
-                arrived = util.age(filename)
+                arrived = int(util.age(filename))
                 gj = convert_bufr_to_geojson(result, arrived=arrived, channel="gisc-foo")
                 print(json.dumps(gj, indent=4, cls=util.NumpyEncoder))
