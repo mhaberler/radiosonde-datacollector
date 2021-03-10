@@ -1,11 +1,11 @@
-import gzip
 import logging
-from datetime import datetime, timedelta
 from math import cos, isinf, isnan, pi
+from operator import itemgetter
+from pprint import pprint
 
-from config import ASCENT_RATE
+import util as u
 
-from constants import earth_avg_radius, earth_gravity, mperdeg
+import config
 
 import geojson
 
@@ -13,347 +13,302 @@ from netCDF4 import Dataset
 
 import numpy as np
 
-import pytz
+import thermodynamics as td
 
-from scipy.interpolate import interp1d
-
-from thermodynamics import barometric_equation_inv
-
-import util
-
-# ASCENT_RATE = 5  # m/s = 300m/min
-# earth_gravity = 9.80665
-# earth_avg_radius = 6371008.7714
-# mperdeg = 111320.0
+import customtypes
 
 
-def basic_qc(Ps, T, Td, U, V):
-    # remove the weird entries that give TOA pressure at the start of the array
-    Ps = np.round(Ps[np.where(Ps > 100)], 2)
-    T = np.round(T[np.where(Ps > 100)], 2)
-    Td = np.round(Td[np.where(Ps > 100)], 2)
-    U = np.round(U[np.where(Ps > 100)], 2)
-    V = np.round(V[np.where(Ps > 100)], 2)
-
-    U[np.isnan(U)] = -9999
-    V[np.isnan(V)] = -9999
-    Td[np.isnan(Td)] = -9999
-    T[np.isnan(T)] = -9999
-    Ps[np.isnan(Ps)] = -9999
-
-    if T.size != 0:
-        if T[0] < 200 or T[0] > 330 or np.isnan(T).all():
-            Ps = np.array([])
-            T = np.array([])
-            Td = np.array([])
-            U = np.array([])
-            V = np.array([])
-
-    if not isinstance(Ps, list):
-        Ps = Ps.tolist()
-    if not isinstance(T, list):
-        T = T.tolist()
-    if not isinstance(Td, list):
-        Td = Td.tolist()
-    if not isinstance(U, list):
-        U = U.tolist()
-    if not isinstance(V, list):
-        V = V.tolist()
-
-    return Ps, T, Td, U, V
-
-
-def RemNaN_and_Interp(raob, file):
-    P_allstns = []
-    T_allstns = []
-    Td_allstns = []
-    times_allstns = []
-    U_allstns = []
-    V_allstns = []
-    wmo_ids_allstns = []
-    relTime_allstns = []
-    sondTyp_allstns = []
-    staLat_allstns = []
-    staLon_allstns = []
-    staElev_allstns = []
-
-    for i, _stn in enumerate(raob["Psig"]):
-        Ps = raob["Psig"][i]
-        Ts = raob["Tsig"][i]
-        Tds = raob["Tdsig"][i]
-
-        Tm = raob["Tman"][i]
-        Tdm = raob["Tdman"][i]
-        Pm = raob["Pman"][i]
-
-        Ws = raob["Wspeed"][i]
-        Wd = raob["Wdir"][i]
-
-        if len(Pm) > 10 and len(Ps) > 10:
-            u, v = winds_to_UV(Ws, Wd)
-
-            PmTm = zip(Pm, Tm)
-            PsTs = zip(Ps, Ts)
-            PmTdm = zip(Pm, Tdm)
-            PsTds = zip(Ps, Tds)
-
-            PT = []
-            PTd = []
-            for pmtm in PmTm:
-                PT.append(pmtm)
-            for psts in PsTs:
-                PT.append(psts)
-            for pmtdm in PmTdm:
-                PTd.append(pmtdm)
-            for pstds in PsTds:
-                PTd.append(pstds)
-
-            PT = [x for x in PT if all(i == i for i in x)]
-            PTd = [x for x in PTd if all(i == i for i in x)]
-
-            PT = sorted(PT, key=lambda x: x[0])
-            PT = PT[::-1]
-            PTd = sorted(PTd, key=lambda x: x[0])
-            PTd = PTd[::-1]
-
-            if len(PT) != 0 and len(PTd) > 10:
-                P, T = zip(*PT)
-                Ptd, Td = zip(*PTd)
-                P = np.array(P)
-                P = P.astype(int)
-                T = np.array(T)
-                Td = np.array(Td)
-
-                # try:
-                #     f = interp1d(Ptd, Td, kind="linear", fill_value="extrapolate")
-                #     Td = f(P)
-                # except FloatingPointError as e:
-                #     logging.info(
-                #         f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Ptd, Td"
-                #     )
-                #     # logging.info(f"Ptd={len(Ptd)} Td={len(Td)} Tdx={len(Tdx)}")
-                #     # logging.info(f"Ptd={list(Ptd)} Td={list(Td)} P={list(P)}")
-                #
-                #     raise
-                #     # continue
-                #
-                # try:
-                #     f = interp1d(Pm, u, kind="linear", fill_value="extrapolate")
-                #     U = f(P)
-                # except FloatingPointError as e:
-                #     logging.info(
-                #         f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Pm, u"
-                #     )
-                #     # logging.info(f"Pm={Pm} u={u} P={P}")
-                #     raise
-                #
-                # try:
-                #     f = interp1d(Pm, v, kind="linear", fill_value="extrapolate")
-                #     V = f(P)
-                # except FloatingPointError as e:
-                #     logging.info(
-                #         f"station {raob['wmo_ids'][i]} i={i} {e}, file={file} - skipping Pm, v"
-                #     )
-                #     # logging.info(f"Pm={Pm} v={v} P={P}")
-                #     raise
-
-                # U = U * 1.94384
-                # V = V * 1.94384
-
-                Pqc, Tqc, Tdqc, Uqc, Vqc = basic_qc(P, T, Td, U, V)
-
-                if len(Pqc) != 0:
-                    P_allstns.append(Pqc)
-                    T_allstns.append(Tqc)
-                    Td_allstns.append(Tdqc)
-                    U_allstns.append(Uqc)
-                    V_allstns.append(Vqc)
-                    wmo_ids_allstns.append(raob["wmo_ids"][i])
-                    times_allstns.append(raob["times"][i])
-                    relTime_allstns.append(raob["relTime"][i])
-                    sondTyp_allstns.append(raob["sondTyp"][i])
-                    staLat_allstns.append(raob["staLat"][i])
-                    staLon_allstns.append(raob["staLon"][i])
-                    staElev_allstns.append(raob["staElev"][i])
-
-    return (
-        relTime_allstns,
-        sondTyp_allstns,
-        staLat_allstns,
-        staLon_allstns,
-        staElev_allstns,
-        P_allstns,
-        T_allstns,
-        Td_allstns,
-        U_allstns,
-        V_allstns,
-        wmo_ids_allstns,
-        times_allstns,
-    )
-
-
-# very simplistic
 def height2time(h0, height):
     hdiff = height - h0
-    return hdiff / ASCENT_RATE
+    return hdiff / config.ASCENT_RATE
 
 
-def emit_ascents(args, source, file, archive, raob, stations):
-    (
-        relTime,
-        sondTyp,
-        staLat,
-        staLon,
-        staElev,
-        P,
-        T,
-        Td,
-        U,
-        V,
-        wmo_ids,
-        times,
-    ) = RemNaN_and_Interp(raob, file)
+def process_netcdf(f,
+                   station_name=None,
+                   origin=None,
+                   filename=None,
+                   arrived=None,
+                   archive=None,
+                   pathSource=None,
+                   source=None,
+                   tagSamples=None):    
 
+    try:
+        nc = Dataset("inmemory.nc", memory=f.read())
+    except Exception as e:
+        logging.error(f"exception {e} reading {f} as netCDF")
+        return False, None
+
+    recNum = nc.dimensions["recNum"].size
+    manLevel = nc.dimensions["manLevel"].size
+    sigTLevel = nc.dimensions["sigTLevel"].size
+    sigWLevel = nc.dimensions["sigWLevel"].size
+    sigPresWLevel = nc.dimensions["sigPresWLevel"].size
+    mWndNum = nc.dimensions["mWndNum"].size
+
+    wmo_ids = nc.variables["wmoStaNum"][:].filled(fill_value=np.nan)
     results = []
 
-    for i, stn in enumerate(wmo_ids):
-        if args.station and args.station != stn:
-            continue
-        if stn in stations:
-            station = stations[stn]
-            if isnan(staLat[i]):
-                staLat[i] = station["lat"]
-            if isnan(staLon[i]):
-                staLon[i] = station["lon"]
-            if isnan(staElev[i]):
-                staElev[i] = station["elevation"]
-        else:
-            station = None
-
-        if isnan(staLat[i]) or isnan(staLon[i]) or isnan(staElev[i]):
-            logging.error(f"skipping station {stn} - no location")
+    for i, stn in enumerate([str(ident).zfill(5) for ident in wmo_ids]):
+        if station_name and station_name != stn:
             continue
 
-        # print(i, stn)
-        takeoff = datetime.utcfromtimestamp(relTime[i]).replace(tzinfo=pytz.utc)
-        syntime = times[i]
-        properties = {
-            "station_id": stn,
-            "id_type": "wmo",
-            "source": "netCDF",
-            "sonde_type": int(sondTyp[i]),
-            "path_source": "simulated",
-            "syn_timestamp": int(syntime.timestamp()),
-            "firstSeen": float(relTime[i]),
-            "lat": round(float(staLat[i]), 6),
-            "lon": round(float(staLon[i]), 6),
-            "elevation": round(float(staElev[i]), 1),
-        }
+        # per station properties
+        sondTyp = nc.variables["sondTyp"][i].filled(fill_value=np.nan)
+        staLat = nc.variables["staLat"][i].filled(fill_value=np.nan)
+        staLon = nc.variables["staLon"][i].filled(fill_value=np.nan)
+        staElev = nc.variables["staElev"][i].filled(fill_value=np.nan)
+        synTime = nc.variables["synTime"][i].filled(fill_value=np.nan)
+        relTime = nc.variables["relTime"][i].filled(fill_value=np.nan)
+
+        properties = customtypes.DictNoNone()
+        u.set_metadata(properties,
+                       station=stn,
+                       stationName=station_name,
+                       position=(staLon, staLat, staElev),
+                       filename=filename,
+                       archive=archive,
+                       arrived=arrived,
+                       synTime=int(synTime),
+                       relTime=int(relTime),
+                       sondTyp=int(sondTyp),
+                       origin=origin,
+                       path_source=pathSource,
+                       source=source)
+
+        # pressure, temp, geopot height, spread at mandatory levels
+        prMan = nc.variables["prMan"][i].filled(fill_value=np.nan)
+        tpMan = nc.variables["tpMan"][i].filled(fill_value=np.nan)
+        htMan = nc.variables["htMan"][i].filled(fill_value=np.nan)
+        
+        # "dew point depression" = "spread" for the rest of us
+        tdMan = nc.variables["tdMan"][i].filled(fill_value=np.nan)
+
+        # wind at mandatory levels
+        wsMan = nc.variables["wsMan"][i].filled(fill_value=np.nan)
+        wdMan = nc.variables["wdMan"][i].filled(fill_value=np.nan)
+
+        temp = []
+        # mandatory levels must have all of p d t gph, optionally speed dir
+        for j in range(manLevel):
+            if isnan(prMan[j]) or isnan(tpMan[j]) or isnan(htMan[j]) or isnan(tdMan[j]):
+                continue
+
+            # ws,wd nan is ok
+
+            # yes, negative heights found in the wild:
+            if htMan[j] < 0:
+                continue
+            wu, wv = u.wind_to_UV(wsMan[j], wdMan[j])
+            h = u.geopotential_height_to_height(htMan[j])
+
+            sample = customtypes.DictNoNone(init={
+                "pressure": u._round(prMan[j], 2),
+                "dewpoint": u._round(tpMan[j] - tdMan[j], 2),
+                "temp": u._round(tpMan[j], 2),
+                "gpheight": u._round(htMan[j], 2),
+                "height": u._round(h, 2),
+                "wind_u": u._round(wu, 2),
+                "wind_v": u._round(wv, 2),
+            })
+            if tagSamples:
+                sample["tag"] = "mandatory"
+            temp.append(sample)
+                
+
+        # pick a base level which has valid p, t, and gph
+        refLevel = -1
+        mustHave = ("pressure", "temp", "gpheight","height")
+        for l in range(len(temp)):
+            o = temp[l]
+            if all(k in o for k in mustHave) and all(not isnan(o[k]) for k in mustHave):
+                p0 = o["pressure"]
+                t0 = o["temp"]
+                h0 = o["height"]
+                refLevel = l
+                break
+
+        if refLevel < 0:
+            pprint(temp)
+            logging.debug(f"skipping station {stn} - no ref level with press, gpheight and temp found, obs={len(temp)}")
+            continue
+
+        # sig Temp levels have pressure, temp, spread
+        prSigT = nc.variables["prSigT"][i].filled(fill_value=np.nan)
+        tpSigT = nc.variables["tpSigT"][i].filled(fill_value=np.nan)
+        tdSigT = nc.variables["tdSigT"][i].filled(fill_value=np.nan)
+
+        # pressure dewpoint temp at sig T levels
+        for j in range(sigTLevel):
+            if isnan(prSigT[j]) or isnan(tpSigT[j]) or isnan(tdSigT[j]):
+                continue
+
+            # add gph, h
+            h = round(td.barometric_equation_inv(h0, t0, p0, prSigT[j]), 1)
+            gph = u.height_to_geopotential_height(h)
+            sample = customtypes.DictNoNone(init={
+                "pressure": u._round(prSigT[j], 2),
+                "dewpoint": u._round(tpSigT[j] - tdSigT[j], 2),
+                "temp": u._round(tpSigT[j], 2),
+                "gpheight": u._round(gph, 2),
+                "height": u._round(h, 2),
+            })
+            if tagSamples:
+                sample["tag"] = "sig_temp"
+            temp.append(sample)
+
+        # sig Wind levels:
+        # should have pressure, geopot height, speed, direction
+        # the following would be nice to have, but I found them all to
+        # be missing (nan) so fill in via height and barometric equation:
+        #prSigW = nc.variables["prSigW"][i].filled(fill_value=np.nan)
+
+        htSigW = nc.variables["htSigW"][i].filled(fill_value=np.nan)
+        wsSigW = nc.variables["wsSigW"][i].filled(fill_value=np.nan)
+        wdSigW = nc.variables["wdSigW"][i].filled(fill_value=np.nan)
+  
+        # sig wind levels p gph u v
+        for j in range(sigWLevel):
+            if isnan(htSigW[j]) or isnan(wsSigW[j]) or isnan(wdSigW[j]):
+                continue
+
+            # add height, derive pressure
+            h = u.geopotential_height_to_height(htSigW[j])
+            p = td.barometric_equation(p0, t0, h - h0)
+            wu, wv = u.wind_to_UV(wsSigW[j], wdSigW[j])
+
+            sample = customtypes.DictNoNone()
+            sample.update({
+                "pressure": u._round(p, 2),
+                "gpheight": u._round(htSigW[j], 2),
+                "height": u._round(h, 2),
+                "wind_u": u._round(wu, 2),
+                "wind_v": u._round(wv, 2),
+            })
+            if tagSamples:
+                sample["tag"] = "sig_wind"
+            temp.append(sample)
+
+        # maximum wind levels
+        prMaxW = nc.variables["prMaxW"][i].filled(fill_value=np.nan)
+        wsMaxW = nc.variables["wsMaxW"][i].filled(fill_value=np.nan)
+        wdMaxW = nc.variables["wdMaxW"][i].filled(fill_value=np.nan)
+       
+        for j in range(mWndNum):
+            if isnan(prMaxW[j]) or isnan(wsMaxW[j]) or isnan(wdMaxW[j]):
+                continue
+
+            # add gph, h
+            h = round(td.barometric_equation_inv(h0, t0, p0, prMaxW[j]), 1)
+            gph = u.height_to_geopotential_height(h)
+            wu, wv = u.wind_to_UV(wsMaxW[j], wdMaxW[j])
+
+            sample = customtypes.DictNoNone(init={
+                "pressure": u._round(prMaxW[j], 2),
+                "gpheight": u._round(gph, 2),
+                "height": u._round(h, 2),  
+                "wind_u": u._round(wu, 2),
+                "wind_v": u._round(wv, 2),
+            })
+            if tagSamples:
+                sample["tag"] = "max_wind"
+            temp.append(sample)
+                                            
+        # sort descending by pressure
+        obs = sorted([{key: value for (key, value)
+                       in d.items()} for d in temp],
+                     key=itemgetter('pressure'), reverse=True)
+
+        if len(obs) == 0:
+            logging.debug(f"skipping station {stn} - no valid observations, fn={filename})")
+            continue
+
+        if config.GENERATE_PATHS:
+            takeoff = relTime
+            prevSecsIntoFlight = 0
+
+        lat_t = properties["lat"]
+        lon_t = properties["lon"]
         fc = geojson.FeatureCollection([])
         fc.properties = properties
 
-        lat_t = staLat[i]
-        lon_t = staLon[i]
+        for o in obs:
+            if config.GENERATE_PATHS:
+                # gross haque to determine rough time of sample
+                secsIntoFlight = height2time(h0, height)
+                sampleTime = takeoff + secsIntoFlight
+                o["time"] = int(sampleTime)
 
-        t0 = T[i][0]
-        p0 = P[i][0]
-        h0 = staElev[i]
+                wu = o.get("wind_u", None)
+                wv = o.get("wind_v", None)
+                if wu and wv:
+                    dt = secsIntoFlight - prevSecsIntoFlight
+                    du = wu * dt
+                    dv = wv * dt
+                    lat_t, lon_t = u.latlonPlusDisplacement(
+                        lat=lat_t, lon=lon_t, u=du, v=dv)
+                    prevSecsIntoFlight = secsIntoFlight
 
-        prevSecsIntoFlight = 0
-
-        logging.debug(f"station {stn}: samples={len(P[i])}")
-        for n in range(0, len(P[i])):
-            pn = P[i][n]
-
-            if isinf(T[i][n]) or isinf(Td[i][n]) or isinf(P[i][n]):
-                logging.debug(
-                    f"station {stn}: skipping layer  P={P[i][n]}  T={T[i][n]} Td={Td[i][n]}"
-                )
-                continue
-
-            # gross haque to determine rough time of sample
-            height = round(barometric_equation_inv(h0, t0, p0, pn), 1)
-            secsIntoFlight = height2time(h0, height)
-            delta = timedelta(seconds=secsIntoFlight)
-            sampleTime = takeoff + delta
-
-            properties = {
-                "time": sampleTime.timestamp(),
-                "gpheight": round(height_to_geopotential_height(height), 1),
-                "temp": round(T[i][n], 2),
-                "dewpoint": round(Td[i][n], 2),
-                "pressure": P[i][n],
-            }
-            u = U[i][n]
-            v = V[i][n]
-            du = dv = 0
-            if u > -9999.0 and v > -9999.0:
-                properties["wind_u"] = round(u, 2)
-                properties["wind_v"] = round(v, 2)
-                dt = secsIntoFlight - prevSecsIntoFlight
-                du = u * dt
-                dv = v * dt
-                lat_t, lon_t = latlonPlusDisplacement(lat=lat_t, lon=lon_t, u=du, v=dv)
-                prevSecsIntoFlight = secsIntoFlight
+            height = o["height"]
+            # it is in geometry.coordinates[2] anyway, so delete
+            del o["height"]
+            
             f = geojson.Feature(
-                geometry=geojson.Point((float(lon_t), float(lat_t), round(height, 2))),
-                properties=properties,
-            )
-            if not f.is_valid:
-                logging.error(f"invalid GeoJSON! {f.errors()}")
-                return False, None
-
+                geometry=geojson.Point((u._round(lon_t, 6),
+                                        u._round(lat_t, 6),
+                                        u._round(height, 2))),
+                properties=o)
             fc.features.append(f)
-        fc.properties["lastSeen"] = sampleTime.timestamp()
-        results.append((fc, file, archive))
-    return True, results
+        if fc:
+            results.append(fc)
+    return results
 
 
-def process_netcdf(args, source, file, archive, config.known_stations,):
+if __name__ == "__main__":
+    import argparse
+    import json
+    parser = argparse.ArgumentParser(
+        description="extract ascent from netCDF file",
+        add_help=True,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", default=False)
+    parser.add_argument("-j", "--json", action="store_true", default=False)
+    parser.add_argument("-t", "--tag-samples",
+                        action="store_true",
+                        default=False,
+                        help="tag the samples by section origin (mandatory, sigW, sigT)")
+    parser.add_argument(
+        "--station-json",
+        action="store",
+        default='station_list.json',
+        help="path to known list of stations (JSON)",
+    )
+    parser.add_argument(
+        "-s", "--station",
+        action="store",
+        default=None,
+        help="station name to extract"
+    )
+    parser.add_argument("files", nargs="*")
+    args = parser.parse_args()
 
-    with gzip.open(file, "rb") as f:
-        try:
-            nc = Dataset("inmemory.nc", memory=f.read())
-        except Exception as e:
-            logging.error(f"exception {e} reading {f} as netCDF")
-            return False, None
+    level = logging.WARNING
+    if args.verbose:
+        level = logging.DEBUG
+    logging.basicConfig(level=level)
 
-        relTime = nc.variables["relTime"][:].filled(fill_value=np.nan)
-        sondTyp = nc.variables["sondTyp"][:].filled(fill_value=np.nan)
-        staLat = nc.variables["staLat"][:].filled(fill_value=np.nan)
-        staLon = nc.variables["staLon"][:].filled(fill_value=np.nan)
-        staElev = nc.variables["staElev"][:].filled(fill_value=np.nan)
+    config.known_stations = json.loads(u.read_file(args.station_json).decode())
+    arrived = u.now()
 
-        Tman = nc.variables["tpMan"][:].filled(fill_value=np.nan)
-        DPDman = nc.variables["tdMan"][:].filled(fill_value=np.nan)
-        wmo_ids = nc.variables["wmoStaNum"][:].filled(fill_value=np.nan)
-
-        DPDsig = nc.variables["tdSigT"][:].filled(fill_value=np.nan)
-        Tsig = nc.variables["tpSigT"][:].filled(fill_value=np.nan)
-        synTimes = nc.variables["synTime"][:].filled(fill_value=np.nan)
-        Psig = nc.variables["prSigT"][:].filled(fill_value=np.nan)
-        Pman = nc.variables["prMan"][:].filled(fill_value=np.nan)
-
-        Wspeed = nc.variables["wsMan"][:].filled(fill_value=np.nan)
-        Wdir = nc.variables["wdMan"][:].filled(fill_value=np.nan)
-        raob = {
-            "relTime": relTime,
-            "sondTyp": sondTyp,
-            "staLat": staLat,
-            "staLon": staLon,
-            "staElev": staElev,
-            "Tsig": Tsig,
-            "Tdsig": Tsig - DPDsig,
-            "Tman": Tman,
-            "Psig": Psig,
-            "Pman": Pman,
-            "Tdman": Tman - DPDman,
-            "Wspeed": Wspeed,
-            "Wdir": Wdir,
-            "times": [
-                datetime.utcfromtimestamp(tim).replace(tzinfo=pytz.utc)
-                for tim in synTimes
-            ],
-            "wmo_ids": [str(ident).zfill(5) for ident in wmo_ids],
-        }
-        return emit_ascents(args, source, file, archive, raob, stationdict)
+    for filename in args.files:
+        with open(filename, "rb") as f:
+            results = process_netcdf(f,
+                                    station_name=args.station,
+                                    origin=None,
+                                    tagSamples=args.tag_samples,
+                                    filename=None,
+                                    arrived=arrived,
+                                    archive=None)
+        if args.json:
+            print(json.dumps(results, indent=4, cls=u.NumpyEncoder))
