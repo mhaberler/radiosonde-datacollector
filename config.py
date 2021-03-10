@@ -48,3 +48,9 @@ known_stations = {}
 # for FM-35 files which do not have track info
 # not very reliable, so move to client
 GENERATE_PATHS = False
+
+# tag samples with the section source of an FM35 report:
+# mandatory, sig temp, sig wind, max wind
+# aids in debugging strange values
+# "mandatory", "sig_temp", "sig_wind", "max_wind"
+TAG_FM35 = True
