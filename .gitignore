@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+madis/
+gisc/
+test/
+fm35/
+fm94/
