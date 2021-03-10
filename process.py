@@ -30,7 +30,7 @@ import util
 
 def gen_output(args, source, h, fn, archive, updated_stations):
     fc = convert_bufr_to_geojson(args, h)
-    return write_geojson(args, source, fc, fn, archive, updated_stations)
+    return write_geojson(args, source, fc, updated_stations)
 
 
 def update_geojson_summary(args, stations, updated_stations, summary):
