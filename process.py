@@ -413,7 +413,6 @@ def process_as(
     if encoding == "netCDF":
         results = process_netcdf(
             data,
-            origin="gisc-foo",
             # filename=f,
             arrived=arrived,
             # archive=None,

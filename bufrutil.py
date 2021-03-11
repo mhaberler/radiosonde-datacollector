@@ -389,5 +389,5 @@ if __name__ == "__main__":
             
             if args.geojson:
                 arrived = int(util.age(filename))
-                gj = convert_bufr_to_geojson(result, arrived=arrived, channel="gisc-foo")
+                gj = convert_bufr_to_geojson(result, arrived=arrived)
                 print(json.dumps(gj, indent=4, cls=util.NumpyEncoder))
