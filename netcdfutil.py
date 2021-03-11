@@ -23,7 +23,7 @@ def height2time(h0, height):
     return hdiff / config.ASCENT_RATE
 
 
-def process_netcdf(f,
+def process_netcdf(data,
                    station_name=None,
                    origin=None,
                    filename=None,
@@ -34,7 +34,7 @@ def process_netcdf(f,
                    tagSamples=None):    
 
     try:
-        nc = Dataset("inmemory.nc", memory=f.read())
+        nc = Dataset("inmemory.nc", memory=data)
     except Exception as e:
         logging.error(f"exception {e} reading {f} as netCDF")
         return False, None
@@ -129,7 +129,7 @@ def process_netcdf(f,
                 break
 
         if refLevel < 0:
-            pprint(temp)
+            #pprint(temp)
             logging.debug(f"skipping station {stn} - no ref level with press, gpheight and temp found, obs={len(temp)}")
             continue
 
@@ -302,13 +302,14 @@ if __name__ == "__main__":
 
     for filename in args.files:
         with open(filename, "rb") as f:
-            arrived = int(util.age(filename))
-            results = process_netcdf(f,
+            arrived = int(u.age(filename))
+            data = f.read()
+            results = process_netcdf(data,
                                     station_name=args.station,
                                     origin=None,
                                     tagSamples=args.tag_samples,
                                     filename=None,
                                     arrived=arrived,
                                     archive=None)
-        if args.json:
+        if args.json and len(results) > 0:
             print(json.dumps(results, indent=4, cls=u.NumpyEncoder))

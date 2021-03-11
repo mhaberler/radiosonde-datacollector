@@ -8,10 +8,10 @@ import numpy as np
 import logging
 
 
-def dump_netcdf(f, station_name, station_ids):    
+def dump_netcdf(data, station_name, station_ids):    
 
     try:
-        nc = Dataset("inmemory.nc", memory=f.read())
+        nc = Dataset("inmemory.nc", memory=data)
     except Exception as e:
         logging.error(f"exception {e} reading {f} as netCDF")
         return False, None
@@ -106,8 +106,12 @@ def dump_netcdf(f, station_name, station_ids):
 
 
 if __name__ == "__main__":
+    import sys
     import argparse
     import json
+    import magic
+    import gzip
+
     parser = argparse.ArgumentParser(
         description="extract ascent from netCDF file",
         add_help=True,
@@ -123,7 +127,18 @@ if __name__ == "__main__":
     parser.add_argument("files", nargs="*")
     args = parser.parse_args()
 
-    for filename in args.files:
-        with open(filename, "rb") as f:
-            dump_netcdf(f, args.station, args.station_ids)
-            
+    with magic.Magic() as m:
+        for filename in args.files:
+            f = open(filename, "rb")
+            data = f.read()
+            fmt = m.id_buffer(data)
+            if fmt ==  "NetCDF Data Format data":
+                dump_netcdf(data, args.station, args.station_ids)
+            elif fmt.startswith("gzip compressed data"):
+                gzf = gzip.open(filename, "rb") 
+                data = gzf.read()
+                dump_netcdf(data, args.station, args.station_ids)
+                gzf.close()
+            else:
+                print(f"{filename}:not a netCDF file: {fmt}", file=sys.stderr)
+            f.close()

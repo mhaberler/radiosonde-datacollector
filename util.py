@@ -59,6 +59,7 @@ _mapping = {
     "station": "station_id",
     "stationName": "station_name",
     "sondTyp": "sonde_type",
+    "id_type": None,
     
     "encoding": None,                 
     "format":   None,                     
@@ -91,18 +92,18 @@ _mapping = {
 }
 
 
-def set_metadata(properties, position=None, **kwargs):
+def set_metadata(properties, **kwargs):
 
     assert type(properties) == customtypes.DictNoNone
 
     station = kwargs.get("station", None)
     wks = station and station in config.known_stations
 
-    idType = kwargs.get("idType", None)
-    properties["id_type"] = idType if idType else ("wmo" if wks else "mystery")
+#    idType = kwargs.get("idType", None)
+#    properties["id_type"] = idType if idType else ("wmo" if wks else "mystery")
     properties["processed"] = now()
 
-    position = kwargs.get("position", None)
+    position = kwargs.pop("position", None)
     if position and all(not isnan(c) for c in position):
         properties["lon"] = _round(float(position[0]), 6)
         properties["lat"] = _round(float(position[1]), 6)
@@ -163,6 +164,20 @@ def age(filename):
     if not os.path.exists(filename):
         return 0
     return os.path.getmtime(filename)
+
+
+def newer(filename, ext):
+    """
+    given a file like foo.ext and an extension like .json,
+    return True if:
+        foo.json does not exist or
+        foo.json has an older modification time than foo.ext
+    """
+    (fn, e) = os.path.splitext(filename)
+    target = fn + ext
+    if not os.path.exists(target):
+        return True
+    return os.path.getmtime(filename) > os.path.getmtime(target)
 
 
 def read_file(name, useBrotli=False):

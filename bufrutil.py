@@ -38,11 +38,7 @@ class BufrUnreadableError(Exception):
     pass
 
 
-def bufr_decode(f, filename, archive,
-                arrived=None,
-                fakeTimes=True,
-                fakeDisplacement=True,
-                logFixup=True):
+def bufr_decode(f, filename):
     
     ibufr = codes_bufr_new_from_file(f)
     if not ibufr:
@@ -225,11 +221,11 @@ def bufr_qc(h, s, fn, archive):
 
 def process_bufr(f, filename=None, archive=None):
     try:
-        (h, s) = bufr_decode(f, filename, archive)
+        (h, s) = bufr_decode(f, filename)
 
     except Exception as e:
         logging.warning(f"exception processing {filename} e={e}")
-        return False, None
+        return None
 
     else:
         if not bufr_qc(h, s, filename, archive):
@@ -292,6 +288,7 @@ def convert_bufr_to_geojson(h,
     util.set_metadata(
         properties,
         station=ident,
+        id_type=typ,
         # stationName=station_name,
         position=(h["longitude"], h["latitude"], ele),
         filename=filename,

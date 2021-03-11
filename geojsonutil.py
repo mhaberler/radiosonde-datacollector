@@ -9,12 +9,9 @@ import config
 
 import util
 
-def write_geojson(args, repfmt, fc, updated_stations):
+def write_geojson(destdir, repfmt, fc, updated_stations):
 
     station_id = fc.properties["station_id"]
-
-    if args.station and args.station != station_id:
-        return
 
     fc.properties["fmt"] = config.FORMAT_VERSION
 
@@ -36,7 +33,7 @@ def write_geojson(args, repfmt, fc, updated_stations):
     time = syn_time.strftime("%H%M%S")
 
     dest = (
-        f"{args.destdir}/{repfmt}/{cc}/{subdir}/"
+        f"{destdir}/{repfmt}/{cc}/{subdir}/"
         f"{year}/{month}/{station_id}_{day}_{time}.geojson.br"
     )
     ref = f"{repfmt}/{cc}/{subdir}/" f"{year}/{month}/{station_id}_{day}_{time}.geojson"
@@ -57,7 +54,4 @@ def write_geojson(args, repfmt, fc, updated_stations):
             pprint(f.properties)
         
     fc.properties["path"] = ref
-
-    if args.dump_geojson:
-        pprint(fc)
     return True
