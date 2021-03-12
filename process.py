@@ -371,7 +371,7 @@ def gen_timestamp(fn, success):
 
 
 def build_work_items(arg_channels):
-    if arg_channels is None:
+    if len(arg_channels) == 0:
         chan = config.channels
     else:
         for c in arg_channels:
