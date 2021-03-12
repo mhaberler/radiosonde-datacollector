@@ -106,8 +106,8 @@ def process_netcdf(data,
                 "pressure": u._round(prMan[j], 2),
                 "dewpoint": u._round(tpMan[j] - tdMan[j], 2),
                 "temp": u._round(tpMan[j], 2),
-                "gpheight": u._round(htMan[j], 2),
-                "height": u._round(h, 2),
+                "gpheight": u._round(htMan[j], 1),
+                "height": u._round(h, 1),
                 "wind_u": u._round(wu, 2),
                 "wind_v": u._round(wv, 2),
             })
@@ -150,8 +150,8 @@ def process_netcdf(data,
                 "pressure": u._round(prSigT[j], 2),
                 "dewpoint": u._round(tpSigT[j] - tdSigT[j], 2),
                 "temp": u._round(tpSigT[j], 2),
-                "gpheight": u._round(gph, 2),
-                "height": u._round(h, 2),
+                "gpheight": u._round(gph, 1),
+                "height": u._round(h, 1),
             })
             if tagSamples:
                 sample["tag"] = "sig_temp"
@@ -180,8 +180,8 @@ def process_netcdf(data,
             sample = customtypes.DictNoNone()
             sample.update({
                 "pressure": u._round(p, 2),
-                "gpheight": u._round(htSigW[j], 2),
-                "height": u._round(h, 2),
+                "gpheight": u._round(htSigW[j], 1),
+                "height": u._round(h, 1),
                 "wind_u": u._round(wu, 2),
                 "wind_v": u._round(wv, 2),
             })
@@ -205,8 +205,8 @@ def process_netcdf(data,
 
             sample = customtypes.DictNoNone(init={
                 "pressure": u._round(prMaxW[j], 2),
-                "gpheight": u._round(gph, 2),
-                "height": u._round(h, 2),  
+                "gpheight": u._round(gph, 1),
+                "height": u._round(h, 1),  
                 "wind_u": u._round(wu, 2),
                 "wind_v": u._round(wv, 2),
             })
@@ -256,7 +256,7 @@ def process_netcdf(data,
             f = geojson.Feature(
                 geometry=geojson.Point((u._round(lon_t, 6),
                                         u._round(lat_t, 6),
-                                        u._round(height, 2))),
+                                        u._round(height, 1))),
                 properties=o)
             fc.features.append(f)
         if fc:

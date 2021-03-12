@@ -145,19 +145,7 @@ def bufr_decode(f, filename):
         timePeriod = codes_get(ibufr, f"#{i}#{k}")
         if timePeriod == CODES_MISSING_LONG:
             continue
-        
-            # invalidSamples += 1
-            # if not fakeTimes:
-            #     continue
-            # else:
-            #     timePeriod = fakeTimeperiod
-            #     fakeTimeperiod += config.FAKE_TIME_STEPS
-            #     if k not in fixups:
-            #         logging.debug(
-            #             f"FIXUP timePeriod fakeTimes:{fakeTimes} fakeTimeperiod={fakeTimeperiod}"
-            #         )
-            #         fixups.append(k)
-
+   
         sample[k] = timePeriod
         replaceable = ["latitudeDisplacement", "longitudeDisplacement"]
         sampleOK = True
@@ -171,18 +159,7 @@ def bufr_decode(f, filename):
                     sampleOK = False
                     missingValues += 1
                     break
-                    
-                    # if fakeDisplacement and k in replaceable:
-                    #     if k not in fixups:
-                    #         logging.debug(f"--FIXUP  key {k}")
-                    #         fixups.append(k)
-                    #     sample[k] = 0
-                    # else:
-                    #     # logging.warning(f"--MISSING {i} key {k} ")
-                    #     sampleOK = False
-                    #     missingValues += 1
-
-                        
+                             
             except Exception as e:
                 sampleOK = False
                 logging.debug(f"sample={i} key={k} e={e}, skipping")
@@ -329,7 +306,7 @@ def convert_bufr_to_geojson(h,
         properties = customtypes.DictNoNone(
             init={
                 "time": int(sampleTime.timestamp()),
-                "gpheight": round(gpheight, 2),
+                "gpheight": round(gpheight, 1),
                 "temp": round(s["airTemperature"], 2),
                 "dewpoint": round(s["dewpointTemperature"], 2),
                 "pressure": round(s["pressure"] / 100.0, 2),
@@ -338,7 +315,7 @@ def convert_bufr_to_geojson(h,
             }
         )
         f = geojson.Feature(
-            geometry=geojson.Point((round(lon, 6), round(lat, 6), round(height, 2))),
+            geometry=geojson.Point((round(lon, 6), round(lat, 6), round(height, 1))),
             properties=properties,
         )
         fc.features.append(f)
