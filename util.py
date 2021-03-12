@@ -25,22 +25,7 @@ def _round(val, decimals):
     return round(float(val), decimals)
 
 
-def add_if_present(d, h, name, bname):
-    if bname in h:
-        d[name] = h[bname]
-
-
-def add_if_set(d, name, value):
-    if issubclass(type(value), float) and isnan(value):
-        return
-    if not value:
-        return
-    d[name] = value
-
-
 # Store as JSON a numpy.ndarray or any nested-list composition.
-
-
 class NumpyEncoder(json.JSONEncoder):
     """ Special json encoder for numpy types """
 
@@ -100,8 +85,6 @@ def set_metadata(properties, **kwargs):
     station = kwargs.get("station", None)
     wks = station and station in config.known_stations
 
-#    idType = kwargs.get("idType", None)
-#    properties["id_type"] = idType if idType else ("wmo" if wks else "mystery")
     properties["processed"] = now()
 
     position = kwargs.pop("position", None)
@@ -123,6 +106,7 @@ def set_metadata(properties, **kwargs):
         if rk == None:
             properties[k] = kwargs[k]
 
+            
 def set_metadata_from_dict(properties, d):
     for k in _mapping:
         if k in d:
