@@ -341,7 +341,7 @@ def process_files(args, wdict, updated_stations):
                                 repfmt,
                                 encoding,
                                 data,
-                                filename,
+                                pathlib.Path(filename).name,
                                 None,
                                 args.destdir,
                                 updated_stations,
