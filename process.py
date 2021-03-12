@@ -180,7 +180,7 @@ def slimdown(st):
 
     for a in ascents:
         for k in list(a.keys()):
-            if k not in ["repfmt", "channel", "syn_timestamp", "lat", "lon","elevation"]:
+            if k not in ["repfmt", "syn_timestamp", "lat", "lon","elevation"]:
                 a.pop(k, None)
         if st.properties["id_type"] == "wmo":
             # fixed station. Take coords from geometry.coords.
