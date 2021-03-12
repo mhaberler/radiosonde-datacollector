@@ -278,6 +278,8 @@ def convert_bufr_to_geojson(h,
         path_source="origin",
         encoding="BUFR",
         channel=channel,
+        fmt=config.FORMAT_VERSION,
+
     )
 
     util.set_metadata_from_dict(properties, h)

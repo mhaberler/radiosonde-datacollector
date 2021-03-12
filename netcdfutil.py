@@ -74,6 +74,7 @@ def process_netcdf(data,
                        sondTyp=int(sondTyp),
                        origin=origin,
                        path_source=pathSource,
+                       fmt=config.FORMAT_VERSION,
                        source=source)
 
         # pressure, temp, geopot height, spread at mandatory levels
