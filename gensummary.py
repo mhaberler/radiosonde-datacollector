@@ -144,11 +144,11 @@ def walkt_tree(toplevel, directory, pattern, after):
             continue
 
         # print(stid, day, tim, datetime.fromtimestamp(ts, pytz.utc))
-        if toplevel.endswith("madis/"):
-            typus = "netCDF"
-        if toplevel.endswith("gisc/"):
-            typus = "BUFR"
-        entry = {"source": typus, "syn_timestamp": int(ts)}
+        if toplevel.endswith("fm35/"):
+            typus = "fm35"
+        if toplevel.endswith("fm94/"):
+            typus = "fm94"
+        entry = {"repfmt": typus, "syn_timestamp": int(ts)}
         gj = None
         if stid not in station_list:
             # maybe mobile. Check ascent for type
@@ -265,7 +265,8 @@ def main():
     parser.add_argument(
         "--summary",
         action="store",
-        default=config.WWW_DIR + config.DATA_DIR + config.SUMMARY,
+        #default=config.WWW_DIR + config.DATA_DIR + config.SUMMARY,
+        default=config.SUMMARY,
         help="path of brotli-compressed summary.geojson.br",
     )
 
@@ -273,7 +274,7 @@ def main():
         "--dirs",
         nargs="+",
         type=str,
-        default=[config.MADIS_DATA, config.GISC_DATA],
+        default=[config.FM35_DATA, config.FM94_DATA],
         help="directories to scan for detail files (*.geojson.br)",
     )
     parser.add_argument(
