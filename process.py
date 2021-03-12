@@ -314,7 +314,7 @@ def process_files(args, wdict, updated_stations):
                                         encoding,
                                         data,
                                         info.filename,
-                                        filename,
+                                        pathlib.Path(filename).name,
                                         args.destdir,
                                         updated_stations,
                                     ) 
