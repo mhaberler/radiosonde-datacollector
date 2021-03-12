@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import zipfile
+import traceback
 from operator import itemgetter
 from pprint import pprint
 
@@ -793,7 +794,7 @@ def main():
         return -2
 
     except pidfile.ProcessRunningException:
-        logging.warning(f"the pid file {config.LOCKFILE} is in use, exiting.")
+        logging.exception(f"the pid file {config.LOCKFILE} is in use, exiting.")
         return -1
 
 
