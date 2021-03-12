@@ -19,7 +19,7 @@ KEEP_MADIS_PROCESSED_FILES = 86400 * 3
 FORMAT_VERSION = 5
 
 WWW_DIR = "/var/www/radiosonde.mah.priv.at/"
-DATA_DIR = "data/"
+DATA_DIR = "data-v2/"
 STATIC_DIR = "static/"
 STATION_TXT = "station_list.txt"
 SUMMARY = "summary.geojson.br"
@@ -30,7 +30,7 @@ INCOMING = r"incoming"
 TS_PROCESSED = ".processed"
 TS_FAILED = ".failed"
 TS_TIMESTAMP = ".timestamp"
-LOCKFILE = "/var/lock/process-radiosonde.pid"
+LOCKFILE = "/var/lock/process-radiosonde."
 STATION_LIST = WWW_DIR + STATIC_DIR + "station_list.json"
 MADIS_DATA = WWW_DIR + DATA_DIR + "madis/"
 GISC_DATA = WWW_DIR + DATA_DIR + "gisc/"
@@ -73,24 +73,24 @@ channels = {
         "name":  "GISC Offenbach",
         "spooldir": SPOOLDIR_GISC_OFFENBACH,
         "pattern":  "*.zip",
-        "housekeeping": "standard",
+        "keeptime": 0,
     },
     "gisc-moscow": {
         "name":  "GISC Moscow",
         "spooldir": SPOOLDIR_GISC_MOSCOW,
-        "housekeeping": "standard",
+        "keeptime": 0,
         "pattern":  "*.bufr",
     },
     "gisc-tokyo": {
         "name":  "GISC Tokyo",
         "spooldir": SPOOLDIR_GISC_TOKYO,
-        "housekeeping": "standard",
+        "keeptime": 0,
         "pattern":  "*.bufr",
     },
     "noaa-madis": {
         "name":  "NOAA MADIS",
         "spooldir": SPOOLDIR_NOAA_MADIS,
-        "housekeeping": "delayed",
+        "keeptime": -1,
         "pattern":  "*.gz",
     },
 }
