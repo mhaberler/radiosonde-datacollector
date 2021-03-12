@@ -12,6 +12,8 @@ import zipfile
 import traceback
 from operator import itemgetter
 from pprint import pprint
+from multiprocessing import Pool, cpu_count
+from multiprocessing_logging import install_mp_handler
 
 import geojson
 
@@ -30,9 +32,6 @@ import customtypes
 import util
 
 import magic
-
-
-# def update_geojson_summary(args, stations, updated_stations, summary):
 
 
 
@@ -171,7 +170,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
     useBrotli = args.summary.endswith(".br")
     util.write_json_file(fc, args.summary, useBrotli=useBrotli, asGeojson=True)
 
-
+# trim summary to minimum required
 def slimdown(st):
     ascents = st.properties["ascents"]
     try:
@@ -191,7 +190,7 @@ def slimdown(st):
 
     return result
 
-
+    
 def process_as(
     args, channel, repfmt, encoding, data, filename, archive, destdir, updated_stations
 ):
@@ -233,11 +232,9 @@ def process_as(
     if encoding == "netCDF":
         results = process_netcdf(
             data,
-            # filename=f,
+            filename=filename,
             arrived=arrived,
-            # archive=None,
             pathSource="simulated",
-            # source=source,
             tagSamples=config.TAG_FM35,
         )
 
@@ -249,16 +246,18 @@ def process_as(
                 {
                     "repfmt": repfmt,
                     "channel": chname,
-                    "archive": None,
-                    "member": "filename",
                     "encoding": "netCDF",
                     "id_type": "wmo"
                 },
             )
             station_id = fc.properties["station_id"]
             updated_stations.append((station_id, fc.properties))
-            r = write_geojson(destdir, repfmt, fc)
-            success = success and r
+
+        args =  [(destdir, repfmt, f) for f in results]
+        r = pool.starmap(write_geojson, args)
+        logging.debug(f'{len(args)} jobs finished, success={not False in r}')
+        success = not False in r
+            
         return success
 
     logging.error(f"{archive}:{filename} : unknown file type {encoding}")
@@ -302,11 +301,6 @@ def process_files(args, wdict, updated_stations):
                                         logging.debug(f"skipping member: {info.filename} repfmt={repfmt} encoding={encoding}")
                                         continue
                                     
-                                    # fd, path = tempfile.mkstemp(dir=config.tmpdir)
-                                    # os.write(fd, data)
-                                    # os.lseek(fd, 0, os.SEEK_SET)
-                                    # infile = os.fdopen(fd)
-
                                     success = process_as(
                                         args,
                                         chan,
@@ -320,8 +314,6 @@ def process_files(args, wdict, updated_stations):
                                     ) 
 
                                     zip_success = zip_success and success
-                                    # infile.close()
-                                    # os.remove(path)
 
                             if not args.ignore_timestamps:
                                 gen_timestamp(fn, zip_success)
@@ -590,10 +582,13 @@ def main():
         level = logging.DEBUG
 
     logging.basicConfig(level=level)
+    install_mp_handler()
     os.umask(0o22)
 
+    global pool
+        
     try:
-        with pidfile.Pidfile(config.LOCKFILE, log=logging.debug, warn=logging.debug):
+        with pidfile.Pidfile(config.LOCKFILE, log=logging.debug, warn=logging.debug) as pf, Pool(cpu_count()) as pool:
 
             config.known_stations = json.loads(util.read_file(args.stations).decode())
             updated_stations = []
