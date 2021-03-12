@@ -339,8 +339,7 @@ def slimdown(st):
         result = ascents[0]["station_id"], ascents[0]["id_type"]
 
     for a in ascents:
-        keylist = a.keys()
-        for k in keylist:
+        for k in list(a.keys()):
             if k not in ["repfmt", "channel", "syn_timestamp", "lat", "lon","elevation"]:
                 a.pop(k, None)
         if st.properties["id_type"] == "wmo":
