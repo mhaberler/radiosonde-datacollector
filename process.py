@@ -192,11 +192,10 @@ def slimdown(st):
 
     
 def process_as(
-    args, channel, repfmt, encoding, data, filename, archive, destdir, updated_stations
+        args, channel, repfmt, encoding, data, filename, archive, destdir, arrived, updated_stations
 ):
 
     chname = config.channels[channel]["name"]
-    arrived = int(util.age(filename))
 
     logging.debug(
         f"processing {repfmt}/{encoding} channel={channel} archive={archive} member={filename} size={len(data)}"
@@ -275,6 +274,8 @@ def process_files(args, wdict, updated_stations):
                     logging.debug(f"skipping: {filename}  (processed)")
                     continue
 
+                arrived = int(util.age(filename))
+
                 (fn, ext) = os.path.splitext(filename)
                 #logging.debug(f"processing: {filename} fn={fn} ext={ext}")
 
@@ -310,6 +311,7 @@ def process_files(args, wdict, updated_stations):
                                         info.filename,
                                         pathlib.Path(filename).name,
                                         args.destdir,
+                                        arrived,
                                         updated_stations,
                                     ) 
 
@@ -344,6 +346,7 @@ def process_files(args, wdict, updated_stations):
                                 pathlib.Path(filename).name,
                                 None,
                                 args.destdir,
+                                arrived,
                                 updated_stations,
                             )
 
