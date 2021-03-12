@@ -433,81 +433,32 @@ def move_files(
 
 
 def keep_house(args):
-    move_files(
-        config.SPOOLDIR_MADIS + config.INCOMING,
-        "*.gz",
-        config.TS_PROCESSED,
-        config.SPOOLDIR_MADIS + config.PROCESSED,
-        keeptime=args.keep_time,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
-    move_files(
-        config.SPOOLDIR_MADIS + config.INCOMING,
-        "*.gz",
-        config.TS_FAILED,
-        config.SPOOLDIR_MADIS + config.FAILED,
-        keeptime=0,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
 
-    move_files(
-        config.SPOOLDIR_GISC + config.INCOMING,
-        "*.zip",
-        config.TS_FAILED,
-        config.SPOOLDIR_GISC + config.FAILED,
-        keeptime=0,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
-    move_files(
-        config.SPOOLDIR_GISC + config.INCOMING,
-        "*.zip",
-        config.TS_TIMESTAMP,
-        config.SPOOLDIR_GISC + config.PROCESSED,
-        keeptime=0,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
-    move_files(
-        config.SPOOLDIR_GISC + config.INCOMING,
-        "*.zip",
-        config.TS_PROCESSED,
-        config.SPOOLDIR_GISC + config.PROCESSED,
-        keeptime=0,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
-    move_files(
-        config.SPOOLDIR_GISC_TOKYO + config.INCOMING,
-        "*.bufr",
-        config.TS_FAILED,
-        config.SPOOLDIR_GISC_TOKYO + config.FAILED,
-        keeptime=0,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
-    move_files(
-        config.SPOOLDIR_GISC_TOKYO + config.INCOMING,
-        "*.bufr",
-        config.TS_TIMESTAMP,
-        config.SPOOLDIR_GISC_TOKYO + config.PROCESSED,
-        keeptime=0,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
-    move_files(
-        config.SPOOLDIR_GISC_TOKYO + config.INCOMING,
-        "*.bufr",
-        config.TS_PROCESSED,
-        config.SPOOLDIR_GISC + config.PROCESSED,
-        keeptime=0,
-        trace=args.verbose,
-        simulate=args.sim_housekeep,
-    )
+    for chan, desc in config.channels.items():
+        spooldir = desc["spooldir"]
+        pattern = desc["pattern"]
+        keeptime = desc["keeptime"]
+        if keeptime: # madis special case
+            keeptime=args.keep_time
 
+        logging.debug(f"janitor at: {chan}")
 
+        move_files(spooldir + config.INCOMING,
+                   pattern,
+                   config.TS_PROCESSED,
+                   spooldir + config.PROCESSED,
+                   keeptime=keeptime,
+                   trace=args.verbose,
+                   simulate=args.sim_housekeep)
+        move_files(spooldir + config.INCOMING,
+                   pattern,
+                   config.TS_FAILED,
+                   spooldir + config.FAILED,
+                   keeptime=0,
+                   trace=args.verbose,
+                   simulate=args.sim_housekeep)
+
+        
 def main():
     parser = argparse.ArgumentParser(
         description="decode radiosonde BUFR and netCDF reports", add_help=True
@@ -591,7 +542,7 @@ def main():
     global pool
         
     try:
-        with pidfile.Pidfile(config.LOCKFILE + pathlib.Path(args.destdir).name,
+        with pidfile.Pidfile(config.LOCKFILE + pathlib.Path(args.destdir).name + ".pid",
                              log=logging.debug,
                              warn=logging.debug) as pf, Pool(cpu_count()) as pool:
 
