@@ -336,40 +336,15 @@ def slimdown(st):
     except KeyError:
         result = ascents[0]["station_id"], ascents[0]["id_type"]
 
-    # for k in ascents.keys():
-    #     if k not in ["source", "encoding", "sys_timestamp"]:
-    #         del
     for a in ascents:
-        a.pop("path", None)
-        a.pop("path_source", None)
-        a.pop("origin_member", None)
-        a.pop("origin_archive", None)
-        a.pop("firstSeen", None)
-        a.pop("lastSeen", None)
-        a.pop("fmt", None)
-        a.pop("sonde_type", None)
-        a.pop("sonde_serial", None)
-        a.pop("sonde_humcorr", None)
-        a.pop("sonde_psensor", None)
-        a.pop("sonde_tsensor", None)
-        a.pop("sonde_hsensor", None)
-        a.pop("sonde_gepot", None)
-        a.pop("sonde_track", None)
-        a.pop("sonde_measure", None)
-        a.pop("sonde_swversion", None)
-        a.pop("sonde_frequency", None)
-        a.pop("processed", None)
-        a.pop("origin", None)
-        a.pop("encoding", None)
-
+        for k in a.keys():
+            if k not in ["repfmt", "channel", "syn_timestamp", "lat", "lon","elevation"]:
+                a.pop(k, None)
         if st.properties["id_type"] == "wmo":
             # fixed station. Take coords from geometry.coords.
             a.pop("lat", None)
             a.pop("lon", None)
             a.pop("elevation", None)
-
-        a.pop("station_id", None)
-        a.pop("id_type", None)
 
     return result
 
