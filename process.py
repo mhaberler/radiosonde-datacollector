@@ -32,121 +32,121 @@ import util
 import magic
 
 
-def update_geojson_summary(args, stations, updated_stations, summary):
+# def update_geojson_summary(args, stations, updated_stations, summary):
 
-    stations_with_ascents = {}
-    # unroll into dicts for quick access
-    if "features" in summary:
-        for feature in summary.features:
-            a = feature.properties["ascents"]
-            if len(a):
-                st_id = feature.properties["station_id"]
-                stations_with_ascents[st_id] = feature
+#     stations_with_ascents = {}
+#     # unroll into dicts for quick access
+#     if "features" in summary:
+#         for feature in summary.features:
+#             a = feature.properties["ascents"]
+#             if len(a):
+#                 st_id = feature.properties["station_id"]
+#                 stations_with_ascents[st_id] = feature
 
-    # remove entries from ascents which have a syn_timestamp less than cutoff_ts
-    cutoff_ts = util.now() - args.max_age * 24 * 3600
+#     # remove entries from ascents which have a syn_timestamp less than cutoff_ts
+#     cutoff_ts = util.now() - args.max_age * 24 * 3600
 
-    # now walk the updates
-    for station, asc in updated_stations:
-        if station in stations_with_ascents:
+#     # now walk the updates
+#     for station, asc in updated_stations:
+#         if station in stations_with_ascents:
 
-            # we already have ascents from this station.
-            # append, sort by synoptic time and de-duplicate
-            oldlist = stations_with_ascents[station]["properties"]["ascents"]
-            oldlist.append(asc)
+#             # we already have ascents from this station.
+#             # append, sort by synoptic time and de-duplicate
+#             oldlist = stations_with_ascents[station]["properties"]["ascents"]
+#             oldlist.append(asc)
 
-            pruned = [x for x in oldlist if x["syn_timestamp"] > cutoff_ts]
+#             pruned = [x for x in oldlist if x["syn_timestamp"] > cutoff_ts]
 
-            newlist = sorted(pruned, key=itemgetter("syn_timestamp"), reverse=True)
-            # https://stackoverflow.com/questions/9427163/remove-duplicate-dict-in-list-in-python
-            seen = set()
-            dedup = []
-            for d in newlist:
-                # keep an ascent of each source, even if same synop time
-                t = str(d["syn_timestamp"]) + d["repfmt"]
-                if t not in seen:
-                    seen.add(t)
-                    dedup.append(d)
+#             newlist = sorted(pruned, key=itemgetter("syn_timestamp"), reverse=True)
+#             # https://stackoverflow.com/questions/9427163/remove-duplicate-dict-in-list-in-python
+#             seen = set()
+#             dedup = []
+#             for d in newlist:
+#                 # keep an ascent of each source, even if same synop time
+#                 t = str(d["syn_timestamp"]) + d["repfmt"]
+#                 if t not in seen:
+#                     seen.add(t)
+#                     dedup.append(d)
 
-            logging.debug(f"pruning {station}: {len(oldlist)} -> {len(dedup)}")
-            stations_with_ascents[station]["properties"]["ascents"] = dedup
+#             logging.debug(f"pruning {station}: {len(oldlist)} -> {len(dedup)}")
+#             stations_with_ascents[station]["properties"]["ascents"] = dedup
 
-            # fixup the name if it was added to station_list.json:
-            ident = stations_with_ascents[station]["properties"]["name"]
-            if ident in stations:
-                # using WMO id as name. Probably mobile. Replace by string name.
-                stations_with_ascents[station]["properties"]["name"] = stations[ident][
-                    "name"
-                ]
+#             # fixup the name if it was added to station_list.json:
+#             ident = stations_with_ascents[station]["properties"]["name"]
+#             if ident in stations:
+#                 # using WMO id as name. Probably mobile. Replace by string name.
+#                 stations_with_ascents[station]["properties"]["name"] = stations[ident][
+#                     "name"
+#                 ]
 
-            # overwrite the station coords by the coords of the last ascent
-            # to properly handle mobile stations
-            if asc["id_type"] == "mobile":
-                logging.debug(
-                    f"fix coords {station} -> {asc['lon']} {asc['lat']} {asc['elevation']}"
-                )
-                properties = stations_with_ascents[station]["properties"]
-                stations_with_ascents[station] = geojson.Feature(
-                    geometry=geojson.Point(
-                        (
-                            round(asc["lon"], 6),
-                            round(asc["lat"], 6),
-                            round(asc["elevation"], 1),
-                        )
-                    ),
-                    properties=properties,
-                )
+#             # overwrite the station coords by the coords of the last ascent
+#             # to properly handle mobile stations
+#             if asc["id_type"] == "mobile":
+#                 logging.debug(
+#                     f"fix coords {station} -> {asc['lon']} {asc['lat']} {asc['elevation']}"
+#                 )
+#                 properties = stations_with_ascents[station]["properties"]
+#                 stations_with_ascents[station] = geojson.Feature(
+#                     geometry=geojson.Point(
+#                         (
+#                             round(asc["lon"], 6),
+#                             round(asc["lat"], 6),
+#                             round(asc["elevation"], 1),
+#                         )
+#                     ),
+#                     properties=properties,
+#                 )
 
-        else:
-            # station appears with first-time ascent
-            properties = {}
-            properties["ascents"] = [asc]
+#         else:
+#             # station appears with first-time ascent
+#             properties = {}
+#             properties["ascents"] = [asc]
 
-            if station in stations:
-                st = stations[station]
+#             if station in stations:
+#                 st = stations[station]
 
-                properties["name"] = st["name"]
-                properties["station_id"] = station
-                properties["id_type"] = "wmo"
-            else:
+#                 properties["name"] = st["name"]
+#                 properties["station_id"] = station
+#                 properties["id_type"] = "wmo"
+#             else:
 
-                # unlisted station: anonymous + mobile
-                # take coords and station_id as name from ascent
-                coords = (asc["lon"], asc["lat"], asc["elevation"])
-                properties["name"] = asc["station_id"]
+#                 # unlisted station: anonymous + mobile
+#                 # take coords and station_id as name from ascent
+#                 coords = (asc["lon"], asc["lat"], asc["elevation"])
+#                 properties["name"] = asc["station_id"]
 
-                if re.match(r"^\d{5}$", station):
-                    # WMO id syntax, but not in station_list
-                    # hence an unregistered but fixed station
-                    properties["id_type"] = "unregistered"
-                else:
-                    # looks like weather ship
-                    properties["id_type"] = "mobile"
+#                 if re.match(r"^\d{5}$", station):
+#                     # WMO id syntax, but not in station_list
+#                     # hence an unregistered but fixed station
+#                     properties["id_type"] = "unregistered"
+#                 else:
+#                     # looks like weather ship
+#                     properties["id_type"] = "mobile"
 
-            stations_with_ascents[station] = geojson.Feature(
-                geometry=geojson.Point(coords), properties=properties
-            )
+#             stations_with_ascents[station] = geojson.Feature(
+#                 geometry=geojson.Point(coords), properties=properties
+#             )
 
-    # create GeoJSON summary
-    ns = na = 0
-    fc = geojson.FeatureCollection([])
-    fc.properties = {
-        "fmt": config.FORMAT_VERSION,
-        "generated": int(util.now()),
-        "max_age": args.max_age * 24 * 3600,
-    }
-    for _st, f in stations_with_ascents.items():
-        sid, stype = slimdown(f)
-        f.properties["station_id"] = sid
-        f.properties["id_type"] = stype
-        ns += 1
-        na += len(f.properties["ascents"])
-        fc.features.append(f)
+#     # create GeoJSON summary
+#     ns = na = 0
+#     fc = geojson.FeatureCollection([])
+#     fc.properties = {
+#         "fmt": config.FORMAT_VERSION,
+#         "generated": int(util.now()),
+#         "max_age": args.max_age * 24 * 3600,
+#     }
+#     for _st, f in stations_with_ascents.items():
+#         sid, stype = slimdown(f)
+#         f.properties["station_id"] = sid
+#         f.properties["id_type"] = stype
+#         ns += 1
+#         na += len(f.properties["ascents"])
+#         fc.features.append(f)
 
-    logging.debug(f"summary {args.summary}: {ns} active stations, {na} ascents")
+#     logging.debug(f"summary {args.summary}: {ns} active stations, {na} ascents")
 
-    useBrotli = args.summary.endswith(".br")
-    util.write_json_file(fc, args.summary, useBrotli=useBrotli, asGeojson=True)
+#     useBrotli = args.summary.endswith(".br")
+#     util.write_json_file(fc, args.summary, useBrotli=useBrotli, asGeojson=True)
 
 
 
