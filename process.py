@@ -790,11 +790,11 @@ def main():
             return 0
 
     except Exception as e:
-        logging.error(f"{e}")
+        logging.exception(f"{e}")
         return -2
 
     except pidfile.ProcessRunningException:
-        logging.exception(f"the pid file {config.LOCKFILE} is in use, exiting.")
+        logging.error(f"the pid file {config.LOCKFILE} is in use, exiting.")
         return -1
 
 
