@@ -387,7 +387,7 @@ def build_work_items(arg_channels):
     fdict = {}
     for c in chan:
         d = config.channels[c]
-        g = pathlib.Path(d["spooldir"] + config.INCOMING + "/"
+        g = pathlib.Path(d["spooldir"] + config.INCOMING + "/")
         print(g)
 
         files = list(g.glob(d["pattern"]))
