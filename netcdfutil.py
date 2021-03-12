@@ -74,8 +74,7 @@ def process_netcdf(data,
                        sondTyp=int(sondTyp),
                        origin=origin,
                        path_source=pathSource,
-                       fmt=config.FORMAT_VERSION,
-                       source=source)
+                       fmt=config.FORMAT_VERSION)
 
         # pressure, temp, geopot height, spread at mandatory levels
         prMan = nc.variables["prMan"][i].filled(fill_value=np.nan)
