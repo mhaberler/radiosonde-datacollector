@@ -67,6 +67,7 @@ _mapping = {
     "origin": None,
     "arrived": None,
     "text": None,
+    "fmt": None,
 
     "path_source":    None,               # simulated gps
     "relTime": "firstSeen",
