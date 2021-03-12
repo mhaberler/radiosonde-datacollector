@@ -202,5 +202,10 @@
     "24": "Optical absorption sensor",
     "30": "Other",
     "31": "Missing value"
-  }
+  },
+    "sonde_gepot": {
+    "0": "calculated from pressure",
+    "1": "calculated from GPS height",
+    "2": "calculated from radar height"
+    }
 }
