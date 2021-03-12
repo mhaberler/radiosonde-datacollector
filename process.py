@@ -588,7 +588,9 @@ def main():
     global pool
         
     try:
-        with pidfile.Pidfile(config.LOCKFILE, log=logging.debug, warn=logging.debug) as pf, Pool(cpu_count()) as pool:
+        with pidfile.Pidfile(config.LOCKFILE + pathlib.Path(args.destdir).name,
+                             log=logging.debug,
+                             warn=logging.debug) as pf, Pool(cpu_count()) as pool:
 
             config.known_stations = json.loads(util.read_file(args.stations).decode())
             updated_stations = []
