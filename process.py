@@ -225,8 +225,10 @@ def process_as(
             return
         if args.dump_geojson:
             pprint(fc)
-            
-        return write_geojson(destdir, repfmt, fc, updated_stations)
+
+        station_id = fc.properties["station_id"]
+        updated_stations.append((station_id, fc.properties))
+        return write_geojson(destdir, repfmt, fc)
 
     if encoding == "netCDF":
         results = process_netcdf(
@@ -253,7 +255,9 @@ def process_as(
                     "id_type": "wmo"
                 },
             )
-            r = write_geojson(destdir, repfmt, fc, updated_stations)
+            station_id = fc.properties["station_id"]
+            updated_stations.append((station_id, fc.properties))
+            r = write_geojson(destdir, repfmt, fc)
             success = success and r
         return success
 
