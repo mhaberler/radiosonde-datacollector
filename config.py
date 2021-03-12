@@ -63,7 +63,7 @@ TAG_FM35 = True
 HSTEP = 100
 
 SPOOLDIR = r"/var/spool/"
-SPOOLDIR_NOAA_MADIS = SPOOLDIR + f"madis/"
+SPOOLDIR_NOAA_MADIS = SPOOLDIR + f"noaa-madis/"
 SPOOLDIR_GISC_OFFENBACH = SPOOLDIR + r"gisc-offenbach/"
 SPOOLDIR_GISC_TOKYO = SPOOLDIR + r"gisc-tokyo/"
 SPOOLDIR_GISC_MOSCOW = SPOOLDIR + r"gisc-moscow/"
