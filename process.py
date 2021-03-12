@@ -148,49 +148,50 @@ def update_geojson_summary(args, stations, updated_stations, summary):
     util.write_json_file(fc, args.summary, useBrotli=useBrotli, asGeojson=True)
 
 
-def slimdown(st):
-    ascents = st.properties["ascents"]
-    try:
-        result = st.properties["station_id"], st.properties["id_type"]
-    except KeyError:
-        result = ascents[0].properties["station_id"], ascents[0].properties["id_type"]
 
-    # for k in ascents.keys():
-    #     if k not in ["source", "encoding", "sys_timestamp"]:
-    #         del
-    for a in ascents:
-        a.pop("path", None)
-        a.pop("path_source", None)
-        a.pop("origin_member", None)
-        a.pop("origin_archive", None)
-        a.pop("firstSeen", None)
-        a.pop("lastSeen", None)
-        a.pop("fmt", None)
-        a.pop("sonde_type", None)
-        a.pop("sonde_serial", None)
-        a.pop("sonde_humcorr", None)
-        a.pop("sonde_psensor", None)
-        a.pop("sonde_tsensor", None)
-        a.pop("sonde_hsensor", None)
-        a.pop("sonde_gepot", None)
-        a.pop("sonde_track", None)
-        a.pop("sonde_measure", None)
-        a.pop("sonde_swversion", None)
-        a.pop("sonde_frequency", None)
-        a.pop("processed", None)
-        a.pop("origin", None)
-        a.pop("encoding", None)
+    # def slimdown(st):
+#     ascents = st.properties["ascents"]
+#     try:
+#         result = st.properties["station_id"], st.properties["id_type"]
+#     except KeyError:
+#         result = ascents[0].properties["station_id"], ascents[0].properties["id_type"]
 
-        if st.properties["id_type"] == "wmo":
-            # fixed station. Take coords from geometry.coords.
-            a.pop("lat", None)
-            a.pop("lon", None)
-            a.pop("elevation", None)
+#     # for k in ascents.keys():
+#     #     if k not in ["source", "encoding", "sys_timestamp"]:
+#     #         del
+#     for a in ascents:
+#         a.pop("path", None)
+#         a.pop("path_source", None)
+#         a.pop("origin_member", None)
+#         a.pop("origin_archive", None)
+#         a.pop("firstSeen", None)
+#         a.pop("lastSeen", None)
+#         a.pop("fmt", None)
+#         a.pop("sonde_type", None)
+#         a.pop("sonde_serial", None)
+#         a.pop("sonde_humcorr", None)
+#         a.pop("sonde_psensor", None)
+#         a.pop("sonde_tsensor", None)
+#         a.pop("sonde_hsensor", None)
+#         a.pop("sonde_gepot", None)
+#         a.pop("sonde_track", None)
+#         a.pop("sonde_measure", None)
+#         a.pop("sonde_swversion", None)
+#         a.pop("sonde_frequency", None)
+#         a.pop("processed", None)
+#         a.pop("origin", None)
+#         a.pop("encoding", None)
 
-        a.pop("station_id", None)
-        a.pop("id_type", None)
+#         if st.properties["id_type"] == "wmo":
+#             # fixed station. Take coords from geometry.coords.
+#             a.pop("lat", None)
+#             a.pop("lon", None)
+#             a.pop("elevation", None)
 
-    return result
+#         a.pop("station_id", None)
+#         a.pop("id_type", None)
+
+#     return result
 
 
 # for now, all netCDF files carry FM35, and BUFR files carry
@@ -337,7 +338,8 @@ def slimdown(st):
         result = ascents[0]["station_id"], ascents[0]["id_type"]
 
     for a in ascents:
-        for k in a.keys():
+        keylist = a.keys()
+        for k in keylist:
             if k not in ["repfmt", "channel", "syn_timestamp", "lat", "lon","elevation"]:
                 a.pop(k, None)
         if st.properties["id_type"] == "wmo":
