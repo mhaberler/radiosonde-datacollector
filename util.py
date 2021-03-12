@@ -142,7 +142,8 @@ def geopotential_height_to_height(geopotential):
 
 
 def now():
-    return int(datetime.utcnow().timestamp())
+    return int(time.time())
+    #return int(datetime.utcnow().timestamp())
 
 
 def age(filename):
