@@ -72,20 +72,20 @@ channels = {
     "gisc-offenbach": {
         "name":  "GISC Offenbach",
         "spooldir": SPOOLDIR_GISC_OFFENBACH,
-        "pattern":  "*.zip",
+        "pattern":  "(*.zip|*.bufr|*.bin)",
         "keeptime": 0,
     },
     "gisc-moscow": {
         "name":  "GISC Moscow",
         "spooldir": SPOOLDIR_GISC_MOSCOW,
         "keeptime": 0,
-        "pattern":  "*.bufr",
+        "pattern":  "(*.zip|*.bufr|*.bin)",
     },
     "gisc-tokyo": {
         "name":  "GISC Tokyo",
         "spooldir": SPOOLDIR_GISC_TOKYO,
         "keeptime": 0,
-        "pattern":  "*.bufr",
+        "pattern":  "(*.zip|*.bufr|*.bin)",
     },
     "noaa-madis": {
         "name":  "NOAA MADIS",
