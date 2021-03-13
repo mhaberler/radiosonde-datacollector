@@ -409,7 +409,12 @@ def move_files(
     spooldir = pathlib.Path(directory)
     # if trace:
     #     logging.debug(f"spooldir={spooldir} pattern={pattern} tsextension={tsextension}")
-    for path in spooldir.glob(pattern):
+
+    m = re.compile(pattern)
+    for path in spooldir.glob("*"):
+        if not m.search(str(path)):
+            continue
+        
         # if trace:
         #     logging.debug(f"lookat: {path}")
         tspath = path.parent / pathlib.Path(path.stem + tsextension)
