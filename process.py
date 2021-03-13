@@ -384,15 +384,15 @@ def build_work_items(arg_channels):
                 )
                 return {}
         chan = arg_channels
+
     fdict = {}
     for c in chan:
         d = config.channels[c]
-        g = list(pathlib.Path(d["spooldir"] + config.INCOMING + "/").glob("*"))
-        m = re.compile((d["pattern"])
-                       
+        g = [str(f) for f in list(pathlib.Path(d["spooldir"] + config.INCOMING + "/").glob("*"))]
+        m = re.compile(d["pattern"])
         files = [f for f in g if m.search(f)]
         fdict[c] = [str(f) for f in files]
-
+                       
     return fdict
 
 
