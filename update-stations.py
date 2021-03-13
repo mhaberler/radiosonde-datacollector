@@ -132,9 +132,11 @@ def main():
         default=config.STATION_TXT,
         help="path to the source text file to generate the station_list.json",
     )
+    parser.add_argument("--tmpdir", action="store", default=None)
 
     args = parser.parse_args()
-
+    if args.tmpdir:
+        config.tmpdir = args.tmpdir
     level = logging.WARNING
     if args.verbose:
         level = logging.DEBUG
