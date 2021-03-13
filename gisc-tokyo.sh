@@ -1,13 +1,12 @@
 #!/bin/sh
-#set -x
 ### Configuration ###
 atomURL="https://www.wis-jma.go.jp/data/syn?ContentType=Text&Category=Upper air&Type=BUFR&Access=Open&Subcategory=TEMP&Subcategory=TEMP MOBIL&Subcategory=TEMP SHIP"
 userName=""
 userPassword=""
 limitSpeed="1m"
-sleepTime="300"
+sleepTime="30"
 export PATH=$PATH:"/usr/bin"
-workParentDirectory=/var/spool/gisc-tokyo
+workParentDirectory="/var/spool/gisc-tokyo"
 storeDirectory=$workParentDirectory"/incoming"
 scriptName=${0##*/}
 workDirectory="_"$scriptName
