@@ -91,7 +91,7 @@ def initialize_stations(txt_fn, json_fn):
 
     stationdict = {}
     with open(txt_fn, "r") as csvfile:
-        stndata = csv.reader(csvfile, delimiter="\t")
+        stndata = csv.reader(filter(lambda row: row[0]!='#', csvfile) , delimiter="\t")
         for row in stndata:
             m = re.match(
                 r"(?P<stn_wmoid>^\w+)\s+(?P<stn_lat>\S+)\s+(?P<stn_lon>\S+)\s+(?P<stn_altitude>\S+)(?P<stn_name>\D+)",
