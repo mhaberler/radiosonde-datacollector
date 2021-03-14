@@ -252,7 +252,7 @@ def main():
     parser.add_argument(
         "--station-json",
         action="store",
-        default=config.WWW_DIR + config.STATIC_DIR + config.STATION_LIST,
+        default=config.STATION_LIST,
         help="path to write the station_list.json file",
     )
     parser.add_argument(
