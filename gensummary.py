@@ -18,6 +18,11 @@ import config
 
 import util
 
+flights = {}
+missing = {}
+txtfrag = []
+
+
 def walkt_tree(toplevel, directory, pattern, after):
     nf = 0
     for p in sorted(directory.rglob(pattern)):
