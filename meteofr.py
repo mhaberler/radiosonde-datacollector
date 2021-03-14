@@ -3,6 +3,7 @@ import datetime
 import pytz
 import sys
 fr_stations = [
+    "07145",
     "07110",
     "07761",
     "07645",
