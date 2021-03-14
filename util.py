@@ -256,6 +256,6 @@ def write_file(s, name, useBrotli=False):
     os.write(fd, s)
     os.fsync(fd)
     os.close(fd)
-    shutil.move(name, path)
+    shutil.move(path, name)
     #os.rename(path, name)
-    os.chmod(path, 0o644)
+    os.chmod(name, 0o644)
