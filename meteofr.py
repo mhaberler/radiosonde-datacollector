@@ -43,7 +43,7 @@ def fetch_all( year, month, day, hour):
                 with open(f"{dest}/{station}.{ds}{hr}.bfr", "wb") as f:
                     f.write(r.content)
             else:
-                print(f "skipping station {station}")
+                print(f"skipping station {station}")
 #        (sondehub-3.8) sondehub@mah2:~/radiosonde-datacollector-dev$ python meteofr.py
 #https://donneespubliques.meteofrance.fr/donnees_libres/Bufr/RS_HR/07110.2021031400.bfr
 # goodheaders = 
