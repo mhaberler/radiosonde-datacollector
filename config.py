@@ -67,6 +67,7 @@ SPOOLDIR_NOAA_MADIS = SPOOLDIR + f"noaa-madis/"
 SPOOLDIR_GISC_OFFENBACH = SPOOLDIR + r"gisc-offenbach/"
 SPOOLDIR_GISC_TOKYO = SPOOLDIR + r"gisc-tokyo/"
 SPOOLDIR_GISC_MOSCOW = SPOOLDIR + r"gisc-moscow/"
+SPOOLDIR_METEO_FR = SPOOLDIR + r"meteo-fr/"
 
 channels = {
     "gisc-offenbach": {
@@ -75,9 +76,15 @@ channels = {
         "pattern":  ".*\\.(zip|bufr|bfr|bin)$",
         "keeptime": 0,
     },
-    "gisc-moscow": {
-        "name":  "GISC Moscow",
-        "spooldir": SPOOLDIR_GISC_MOSCOW,
+    # "gisc-moscow": {
+    #     "name":  "GISC Moscow",
+    #     "spooldir": SPOOLDIR_GISC_MOSCOW,
+    #     "keeptime": 0,
+    #     "pattern":  ".*\\.(zip|bufr|bfr|bin)$",
+    # },
+    "meteo-fr": {
+        "name":  "Meteo France",
+        "spooldir": SPOOLDIR_METEO_FR,
         "keeptime": 0,
         "pattern":  ".*\\.(zip|bufr|bfr|bin)$",
     },
