@@ -407,6 +407,13 @@ def move_files(
         else:
             destpath.mkdir(mode=0o755, parents=True, exist_ok=False)
     spooldir = pathlib.Path(directory)
+
+    if not spooldir.exists():
+        if simulate:
+            logging.debug(f"creating dir: {spooldir}")
+        else:
+            spooldir.mkdir(mode=0o755, parents=True, exist_ok=False)
+    
     # if trace:
     #     logging.debug(f"spooldir={spooldir} pattern={pattern} tsextension={tsextension}")
 
