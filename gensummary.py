@@ -225,7 +225,7 @@ def fixup_flights(flights):
     for _stid, f in flights.items():
         a = f.properties["ascents"]
         f.properties["ascents"] = sorted(
-            a, key=itemgetter("syn_timestamp"), reverse=True
+            a, key=itemgetter("syn_timestamp", "repfmt"), reverse=True
         )
 
     # pass 2: for mobile stations, propagate up
