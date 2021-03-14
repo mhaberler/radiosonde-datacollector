@@ -1,5 +1,6 @@
 from math import cos, sin, isnan, nan, pi
 import json
+import shutil
 import logging
 import os
 import tempfile
@@ -255,5 +256,6 @@ def write_file(s, name, useBrotli=False):
     os.write(fd, s)
     os.fsync(fd)
     os.close(fd)
-    os.rename(path, name)
-    os.chmod(name, 0o644)
+    shutil.move(name, path)
+    #os.rename(path, name)
+    os.chmod(path, 0o644)
