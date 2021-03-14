@@ -252,21 +252,13 @@ def main():
     parser.add_argument(
         "--station-json",
         action="store",
-        default=config.STATION_LIST,
+        default=config.WWW_DIR + config.STATIC_DIR + config.STATION_LIST,
         help="path to write the station_list.json file",
     )
     parser.add_argument(
-        "--station-text",
-        action="store",
-        default=config.STATION_TXT,
-        help="path to the source text file to generate the station_list.json",
-    )
-
-    parser.add_argument(
         "--summary",
         action="store",
-        #default=config.WWW_DIR + config.DATA_DIR + config.SUMMARY,
-        default=config.SUMMARY,
+        default=config.WWW_DIR + config.DATA_DIR + config.SUMMARY,
         help="path of brotli-compressed summary.geojson.br",
     )
 
@@ -296,10 +288,6 @@ def main():
     logging.basicConfig(level=level)
     os.umask(0o22)
 
-    if not os.path.exists(args.station_text):
-        logging.error(f"the {args.station_text} does not exist")
-        sys.exit(1)
-
     for d in args.dirs:
         if not os.path.exists(d):
             logging.error(f"the directory {d} does not exist")
@@ -309,7 +297,6 @@ def main():
         with pidfile.Pidfile(config.LOCKFILE, log=logging.debug, warn=logging.debug):
 
             cutoff_ts = util.now() - args.max_age * 24 * 3600
-            update_station_list(args.station_text, args.station_json)
 
             global station_list
             station_list = json.loads(util.read_file(args.station_json).decode())
@@ -328,7 +315,9 @@ def main():
             for _st, f in flights.items():
                 fc.features.append(f)
 
-            util.write_json_file(fc, args.summary, useBrotli=True, asGeojson=True)
+            util.write_json_file(fc, args.summary,
+                                 useBrotli=args.summary.endswith(".br"),
+                                 asGeojson=True)
 
             for l in txtfrag:
                 print(l, file=sys.stderr)
