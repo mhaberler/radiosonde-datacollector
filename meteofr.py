@@ -19,9 +19,7 @@ fr_stations = [
 ]
 site = "https://donneespubliques.meteofrance.fr/donnees_libres/"
 prefix = "Bufr/RS_HR/"
-
-x = datetime.datetime(2018, 9, 15)
-
+dest = "/var/spool/meteo-fr/incoming"
 
 def getascent(station, year, month, day, hour):
 
@@ -40,10 +38,48 @@ def fetch_all( year, month, day, hour):
         r = requests.get(url)
         if r:
             print("headers: ", r.headers)
-            with open(f"{station}.{ds}{hr}.bfr", "wb") as f:
-                f.write(r.content)
-                
-        
+            if 'Last-Modified' in r.headers:
+                with open(f"{dest}/{station}.{ds}{hr}.bfr", "wb") as f:
+                    f.write(r.content)
+            else:
+                print(f "skipping station {station}")
+#        (sondehub-3.8) sondehub@mah2:~/radiosonde-datacollector-dev$ python meteofr.py
+#https://donneespubliques.meteofrance.fr/donnees_libres/Bufr/RS_HR/07110.2021031400.bfr
+# goodheaders = 
+# {
+#     'Date': 'Sun, 14 Mar 2021 08:45:08 GMT',
+#     'Server': 'MFWS',
+#     'Last-Modified': 'Sun, 14 Mar 2021 03:00:34 GMT',
+#     'ETag': '"2da481-1226e-5bd76563a3880"',
+#     'Accept-Ranges':
+#     'bytes', 'Content-Type': 'text/plain; charset=ISO-8859-1',
+#     'Vary': 'Accept-Encoding',
+#     'Content-Encoding': 'gzip',
+#     'Content-Disposition': 'attachment',
+#     'Keep-Alive': 'timeout=5, max=300',
+#     'Connection': 'Keep-Alive',
+#     'Transfer-Encoding': 'chunked'
+# }
+# #https://donneespubliques.meteofrance.fr/donnees_libres/Bufr/RS_HR/91958.2021031400.bfr
+# bad_headers =  {
+#     'Date': 'Sun, 14 Mar 2021 08:45:12 GMT',
+#     'Server': 'MFWS',
+#     'Set-Cookie': 'PHPSESSID=7gi5hf61kkcnm6eedpsqen8175; expires=Sun, 14-Mar-2021 09:00:12 GMT; path=/',
+#     'Expires': 'Thu, 19 Nov 1981 08:52:00 GMT',
+#     'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
+#     'Pragma': 'no-cache',
+#     'Vary': 'Accept-Encoding',
+#     'Content-Encoding': 'gzip',
+#     'Content-Length': '8884',
+#     'Content-Type': 'text/html; charset=utf-8',
+#     'Keep-Alive': 'timeout=5, max=299',
+#     'Connection': 'Keep-Alive'
+# }
+
+ 
+
+#https://donneespubliques.meteofrance.fr/donnees_libres/Bufr/RS_HR/07761.2021031400.bfr
+
 #d =  datetime.datetime.now(tz=pytz.utc)
 
 
