@@ -45,7 +45,7 @@ def looking_for(spool, fns):
         for subdir in [config.PROCESSED, config.INCOMING, config.FAILED]:
             pn = spool + subdir + "/" + fn
             if pathlib.Path(pn).exists():
-                continue
+                break
         required.append(fn)
     return required
 
