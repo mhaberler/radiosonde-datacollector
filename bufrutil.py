@@ -239,7 +239,7 @@ def convert_bufr_to_geojson(h,
         minute=h["minute"],
         hour=h["hour"],
         second=h["second"],
-        tzinfo=None,
+        tzinfo=pytz.utc,
     )
 
     samples = h["samples"]
