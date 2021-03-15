@@ -39,15 +39,15 @@ def current_bufrs(dt, stations):
 
 
 def looking_for(spool, fns):
-    required = []
+    found = []
     for fn in fns:
         # did we received this one already?
         for subdir in [config.PROCESSED, config.INCOMING, config.FAILED]:
             pn = spool + subdir + "/" + fn
             if pathlib.Path(pn).exists():
+                found.append(fn)
                 break
-        required.append(fn)
-    return required
+    return [fn for f in fns if not f in found]
 
 
 def main():
