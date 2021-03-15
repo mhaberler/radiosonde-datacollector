@@ -1,4 +1,3 @@
-
 FAKE_TIME_STEPS = 30  # assume 30sec update interval
 MAX_FLIGHT_DURATION = 3600 * 5  # rather unlikely
 
@@ -37,7 +36,7 @@ FM94_DATA = WWW_DIR + DATA_DIR + "fm94/"
 CHARSET = "utf-8"
 tmpdir = "/tmp"
 INDENT = 4
-MESSAGE_START_SIGNATURE = b'BUFR'
+MESSAGE_START_SIGNATURE = b"BUFR"
 
 # added to featurecollection.properties.fmt = FORMAT_VERSION
 # 4 - using deep subdirs year/month under station
@@ -71,9 +70,9 @@ SPOOLDIR_METEO_FR = SPOOLDIR + r"meteo-fr/"
 
 channels = {
     "gisc-offenbach": {
-        "name":  "GISC Offenbach",
+        "name": "GISC Offenbach",
         "spooldir": SPOOLDIR_GISC_OFFENBACH,
-        "pattern":  ".*\\.(zip|bufr|bfr|bin)$",
+        "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "keeptime": 0,
     },
     # "gisc-moscow": {
@@ -83,21 +82,37 @@ channels = {
     #     "pattern":  ".*\\.(zip|bufr|bfr|bin)$",
     # },
     "meteo-fr": {
-        "name":  "Meteo France",
+        "name": "Meteo France",
         "spooldir": SPOOLDIR_METEO_FR,
         "keeptime": 0,
-        "pattern":  ".*\\.(zip|bufr|bfr|bin)$",
+        "pattern": ".*\\.(zip|bufr|bfr|bin)$",
+        "stations": [
+            "07145",  # Paris-Trappes
+            "07110",  # Brest-Guipavas
+            "07761",  # Ajaccio
+            "07645",  # Nîmes-Courbessac
+            "07510",  # Bordeaux-Mérignac
+            "89642",  # Dumont D'Urville
+            "61998",  # Kerguelen
+            "78897",  # Le Raizet
+            "81405",  # Rochambeau
+            "61980",  # Gillot
+            "91925",  # Hiva-Oa
+            "91938",  # Faa'a
+            "91958",  # Rapa
+            "91592",  # Nouméa
+        ],
     },
     "gisc-tokyo": {
-        "name":  "GISC Tokyo",
+        "name": "GISC Tokyo",
         "spooldir": SPOOLDIR_GISC_TOKYO,
         "keeptime": 0,
-        "pattern":  ".*\\.(zip|bufr|bfr|bin)$",
+        "pattern": ".*\\.(zip|bufr|bfr|bin)$",
     },
     "noaa-madis": {
-        "name":  "NOAA MADIS",
+        "name": "NOAA MADIS",
         "spooldir": SPOOLDIR_NOAA_MADIS,
         "keeptime": -1,
-        "pattern":  ".*\\.gz$",
+        "pattern": ".*\\.gz$",
     },
 }
