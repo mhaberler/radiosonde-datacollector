@@ -1,110 +1,99 @@
+import argparse
 import requests
 import datetime
 import pytz
 import sys
-fr_stations = [
-    "07145",
-    "07110",
-    "07761",
-    "07645",
-    "07510",
-    "89642",
-    "61998",
-    "78897",
-    "81405",
-    "61980",
-    "91925",
-    "91938",
-    "91958",
-    "91592"
-]
+import logging
+import os
+import pathlib
+
+import config
+
+
 site = "https://donneespubliques.meteofrance.fr/donnees_libres/"
 prefix = "Bufr/RS_HR/"
 dest = "/var/spool/meteo-fr/incoming"
 
-def getascent(station, year, month, day, hour):
 
-    date = datetime.datetime( year, month, day)
-    ds = date.strftime("%Y%m%d")
-    hr = f"{hour:02d}"
-    print(f"{site}{prefix}{station}.{ds}{hr}.bfr")
-
-def fetch_all( year, month, day, hour):
-    for station in fr_stations:
-        date = datetime.datetime( year, month, day)
-        ds = date.strftime("%Y%m%d")
-        hr = f"{hour:02d}"
-        url = f"{site}{prefix}{station}.{ds}{hr}.bfr"
-        print(url)
-        r = requests.get(url)
-        if r:
-            print("headers: ", r.headers)
-            if 'Last-Modified' in r.headers:
-                with open(f"{dest}/{station}.{ds}{hr}.bfr", "wb") as f:
-                    f.write(r.content)
-            else:
-                print(f"skipping station {station}")
-#        (sondehub-3.8) sondehub@mah2:~/radiosonde-datacollector-dev$ python meteofr.py
-#https://donneespubliques.meteofrance.fr/donnees_libres/Bufr/RS_HR/07110.2021031400.bfr
-# goodheaders = 
-# {
-#     'Date': 'Sun, 14 Mar 2021 08:45:08 GMT',
-#     'Server': 'MFWS',
-#     'Last-Modified': 'Sun, 14 Mar 2021 03:00:34 GMT',
-#     'ETag': '"2da481-1226e-5bd76563a3880"',
-#     'Accept-Ranges':
-#     'bytes', 'Content-Type': 'text/plain; charset=ISO-8859-1',
-#     'Vary': 'Accept-Encoding',
-#     'Content-Encoding': 'gzip',
-#     'Content-Disposition': 'attachment',
-#     'Keep-Alive': 'timeout=5, max=300',
-#     'Connection': 'Keep-Alive',
-#     'Transfer-Encoding': 'chunked'
-# }
-# #https://donneespubliques.meteofrance.fr/donnees_libres/Bufr/RS_HR/91958.2021031400.bfr
-# bad_headers =  {
-#     'Date': 'Sun, 14 Mar 2021 08:45:12 GMT',
-#     'Server': 'MFWS',
-#     'Set-Cookie': 'PHPSESSID=7gi5hf61kkcnm6eedpsqen8175; expires=Sun, 14-Mar-2021 09:00:12 GMT; path=/',
-#     'Expires': 'Thu, 19 Nov 1981 08:52:00 GMT',
-#     'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
-#     'Pragma': 'no-cache',
-#     'Vary': 'Accept-Encoding',
-#     'Content-Encoding': 'gzip',
-#     'Content-Length': '8884',
-#     'Content-Type': 'text/html; charset=utf-8',
-#     'Keep-Alive': 'timeout=5, max=299',
-#     'Connection': 'Keep-Alive'
-# }
-
- 
-
-#https://donneespubliques.meteofrance.fr/donnees_libres/Bufr/RS_HR/07761.2021031400.bfr
-
-#d =  datetime.datetime.now(tz=pytz.utc)
+def current_bufrs(dt, stations):
+    if dt.hour < 12:
+        valid = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        valid = dt.replace(hour=12, minute=0, second=0, microsecond=0)
+    vt = valid.strftime("%Y%m%d%H")
+    logging.debug(f"current extension: {vt}")
+    return [f"{station}.{vt}.bfr" for station in stations]
 
 
-#print(d.strftime("%Y%m%d%H"), d.hour)
-#getascent("07110", 2021, 3, 14, 0)
-#getascent("07510", 2021, 3, 13, 12)
-fetch_all(2021,3,14,0)
-
-sys.exit(0)
-
-#https://donneespubliques.meteofrance.fr/donnees_libres/Bufr/RS_HR/07145.2021031312.bfr
-
-
-url =  'https://donneespubliques.meteofrance.fr/donnees_libres/Pdf/RS/RSDispos.json'
-r = requests.get(url)
-
-print()
-
-al = r.json()["Bufr/RS_HR/"]
+def looking_for(spool, fns):
+    found = []
+    for fn in fns:
+        # did we received this one already?
+        for subdir in [config.PROCESSED, config.INCOMING, config.FAILED]:
+            pn = spool + subdir + "/" + fn
+            if pathlib.Path(pn).exists():
+                found.append(fn)
+                break
+    return list(set(fns) - set(found))
 
 
-for s in al:
-    station = s["station"]
-    name  = s["nom"]
-    for d in  s["dates"]:
-        day = d["jour"]
-        ascents = d["reseaux"]
+def fetch(bufr, dest):
+    url = f"{site}{prefix}{bufr}"
+    r = requests.get(url)
+    if r:
+        if "Last-Modified" in r.headers:
+            logging.debug(f"retrieving: {url}, modified: {r.headers['Last-Modified']}")
+            with open(f"{dest}/{bufr}", "wb") as f:
+                f.write(r.content)
+        else:
+            logging.debug(f"not yet available: {bufr}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="fetch current BUFR files from Meteo France",
+        add_help=True,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", default=False)
+    parser.add_argument(
+        "--dest",
+        action="store",
+        help="destination dir to write BUFR files to",
+    )
+    args = parser.parse_args()
+    level = logging.WARNING
+    if args.verbose:
+        level = logging.DEBUG
+
+    logging.basicConfig(level=level)
+    os.umask(0o22)
+
+    c = config.channels["meteo-fr"]
+    spool = c["spooldir"]
+    stations = c["stations"]
+
+    now = datetime.datetime.utcnow()
+    filenames = current_bufrs(now, stations)
+    required = looking_for(spool, filenames)
+
+    logging.debug(f"required: {required}")
+    for r in required:
+        fetch(r, spool + config.INCOMING)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+
+# check via JSON "ascents available" file:
+# url =  'https://donneespubliques.meteofrance.fr/donnees_libres/Pdf/RS/RSDispos.json'
+# r = requests.get(url)
+# print()
+# al = r.json()["Bufr/RS_HR/"]
+# for s in al:
+#     station = s["station"]
+#     name  = s["nom"]
+#     for d in  s["dates"]:
+#         day = d["jour"]
+#         ascents = d["reseaux"]
