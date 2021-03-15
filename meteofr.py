@@ -15,14 +15,8 @@ prefix = "Bufr/RS_HR/"
 dest = "/var/spool/meteo-fr/incoming"
 
 
-def current_bufrs(dt, stations):
-    if dt.hour < 12:
-        valid = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-    else:
-        valid = dt.replace(hour=12, minute=0, second=0, microsecond=0)
-    vt = valid.strftime("%Y%m%d%H")
-    logging.debug(f"current extension: {vt}")
-    return [f"{station}.{vt}.bfr" for station in stations]
+def current_bufrs(day, hour, stations):
+    return [f"{station}.{day}{hour}.bfr" for station in stations]
 
 
 def looking_for(spool, fns):
@@ -61,6 +55,26 @@ def main():
         action="store",
         help="destination dir to write BUFR files to",
     )
+    parser.add_argument(
+        "--stations",
+        nargs="+",
+        type=str,
+        required=True,
+        help="station ID's to retrieve",
+    )
+    parser.add_argument(
+        "--day",
+        action="store",
+        help="day tag in format YYYYMMDD, default: today",
+    )
+    parser.add_argument(
+        "--hour",
+        action="store",
+        required=True,
+        type=int,
+        help="hour",
+    )
+       
     args = parser.parse_args()
     level = logging.WARNING
     if args.verbose:
@@ -69,15 +83,22 @@ def main():
     logging.basicConfig(level=level)
     os.umask(0o22)
 
+    if args.day:
+        day = args.day
+    else:
+        day = datetime.datetime.utcnow().strftime("%Y%m%d")
+
+    hour = f"{args.hour:02d}"
+    
     c = config.channels["meteo-fr"]
     spool = c["spooldir"]
-    stations = c["stations"]
 
-    now = datetime.datetime.utcnow()
-    filenames = current_bufrs(now, stations)
+    filenames = current_bufrs(day, hour, args.stations)
+    logging.debug(f"filenames: {filenames}")
+
     required = looking_for(spool, filenames)
-
     logging.debug(f"required: {required}")
+
     for r in required:
         fetch(r, spool + config.INCOMING)
 
