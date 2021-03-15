@@ -53,10 +53,11 @@ def looking_for(spool, fns):
 def main():
     c = config.channels["meteo-fr"]
     spool = c["spooldir"]
-
+    stations = c["stations"]
+    
     now = datetime.datetime.utcnow()
-    filenames = current_bufrs(now, c["stations"])
-    required = looking_for(meteofr, filenames)
+    filenames = current_bufrs(now, stations)
+    required = looking_for(spool, filenames)
 
     print(required)
 
