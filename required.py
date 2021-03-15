@@ -47,7 +47,8 @@ def looking_for(spool, fns):
             if pathlib.Path(pn).exists():
                 found.append(fn)
                 break
-    return [fn for f in fns if not f in found]
+            
+    return list(set(fn) - set(found))
 
 
 def main():
