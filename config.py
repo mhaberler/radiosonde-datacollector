@@ -86,22 +86,24 @@ channels = {
         "spooldir": SPOOLDIR_METEO_FR,
         "keeptime": 0,
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
-        "stations": [
-            "07145",  # Paris-Trappes
-            "07110",  # Brest-Guipavas
-            "07761",  # Ajaccio
-            "07645",  # Nîmes-Courbessac
-            "07510",  # Bordeaux-Mérignac
-            "89642",  # Dumont D'Urville
-            "61998",  # Kerguelen
-            "78897",  # Le Raizet
-            "81405",  # Rochambeau
-            "61980",  # Gillot
-            "91925",  # Hiva-Oa
-            "91938",  # Faa'a
-            "91958",  # Rapa
-            "91592",  # Nouméa
-        ],
+        # "stations": [
+        #     # 0,12
+        #     "07145",  # Paris-Trappes
+        #     "07110",  # Brest-Guipavas
+        #     "07761",  # Ajaccio
+        #     "07645",  # Nîmes-Courbessac
+        #     "07510",  # Bordeaux-Mérignac
+        #     "61998",  # Kerguelen
+        #     "81405",  # Rochambeau
+        #     "61980",  # Gillot
+        #     "91925",  # Hiva-Oa
+        #     "91938",  # Faa'a
+        #     "91592",  # Nouméa
+            
+        #     "89642",  # Dumont D'Urville - 0h
+        #     "78897",  # Le Raizet 12h
+        #     "91958",  # Rapa 18h
+        # ],
     },
     "gisc-tokyo": {
         "name": "GISC Tokyo",
