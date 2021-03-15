@@ -1,3 +1,4 @@
+import argparse
 import requests
 import datetime
 import pytz
@@ -7,21 +8,6 @@ import os
 import pathlib
 
 import config
-
-# "07145"  Paris-Trappes
-# "07110"  Brest-Guipavas
-# "07761"  Ajaccio
-# "07645"  Nîmes-Courbessac
-# "07510"  Bordeaux-Mérignac
-# "89642"  Dumont D'Urville
-# "61998"  Kerguelen
-# "78897"  Le Raizet
-# "81405"  Rochambeau
-# "61980"  Gillot
-# "91925"  Hiva-Oa
-# "91938"  Faa'a
-# "91958"  Rapa
-# "91592"  Nouméa>
 
 
 site = "https://donneespubliques.meteofrance.fr/donnees_libres/"
@@ -35,6 +21,7 @@ def current_bufrs(dt, stations):
     else:
         valid = dt.replace(hour=12, minute=0, second=0, microsecond=0)
     vt = valid.strftime("%Y%m%d%H")
+    logging.debug(f"current extension: {vt}")
     return [f"{station}.{vt}.bfr" for station in stations]
 
 
@@ -47,11 +34,41 @@ def looking_for(spool, fns):
             if pathlib.Path(pn).exists():
                 found.append(fn)
                 break
-            
     return list(set(fns) - set(found))
 
 
+def fetch(bufr, dest):
+     url = f"{site}{prefix}{bufr}"
+     r = requests.get(url)
+     if r:
+         if 'Last-Modified' in r.headers:
+             logging.debug(f"retrieving: {url}, modified: {r.headers['Last-Modified']}")
+             with open(f"{dest}/{bufr}", "wb") as f:
+                 f.write(r.content)
+         else:
+             logging.debug(f"not yet available: {bufr}")
+             
 def main():
+    parser = argparse.ArgumentParser(
+        description="fetch current BUFR files from Meteo France",
+        add_help=True,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", default=False)
+    parser.add_argument(
+        "--dest",
+        action="store",
+        help="destination dir to write BUFR files to",
+    )
+    args = parser.parse_args()
+    level = logging.WARNING
+    if args.verbose:
+        level = logging.DEBUG
+
+    logging.basicConfig(level=level)
+    os.umask(0o22)
+
+
     c = config.channels["meteo-fr"]
     spool = c["spooldir"]
     stations = c["stations"]
@@ -60,7 +77,9 @@ def main():
     filenames = current_bufrs(now, stations)
     required = looking_for(spool, filenames)
 
-    print(required)
+    logging.debug(f"required: {required}")
+    for r in required:
+        fetch(r, spool + config.INCOMING)
 
 
 if __name__ == "__main__":
