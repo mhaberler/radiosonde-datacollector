@@ -14,9 +14,6 @@ MAX_DAYS_IN_SUMMARY = 14
 # after 3 days move to processed
 KEEP_MADIS_PROCESSED_FILES = 86400 * 3
 
-# added to featurecollection.properties.fmt and summary.fmt
-FORMAT_VERSION = 5
-
 WWW_DIR = "/var/www/radiosonde.mah.priv.at/"
 DATA_DIR = "data/"
 STATIC_DIR = "static/"
@@ -40,7 +37,7 @@ MESSAGE_START_SIGNATURE = b"BUFR"
 
 # added to featurecollection.properties.fmt = FORMAT_VERSION
 # 4 - using deep subdirs year/month under station
-FORMAT_VERSION = 6
+FORMAT_VERSION = 7
 
 
 # set in process.py, read-only
