@@ -119,7 +119,7 @@ def main():
     for r in required:
         fetch(r, spool + config.INCOMING)
         sleeptime = random.uniform(args.mindelay, args.maxdelay)
-        logging.debug(f"sleeping for: {sleeptime.1f} sec")
+        logging.debug(f"sleeping for: {sleeptime:.1f} sec")
         sleep(sleeptime)
 
 
