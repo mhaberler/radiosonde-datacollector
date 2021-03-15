@@ -48,7 +48,7 @@ def looking_for(spool, fns):
                 found.append(fn)
                 break
             
-    return list(set(fn) - set(found))
+    return list(set(fns) - set(found))
 
 
 def main():
