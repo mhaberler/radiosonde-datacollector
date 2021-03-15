@@ -6,6 +6,8 @@ import sys
 import logging
 import os
 import pathlib
+from numpy import random
+from time import sleep
 
 import config
 
@@ -74,7 +76,22 @@ def main():
         type=int,
         help="hour",
     )
-       
+    parser.add_argument(
+        "--mindelay",
+        action="store",
+        default=2.0,
+        type=float,
+        help="min delay value",
+    )
+        
+    parser.add_argument(
+        "--maxdelay",
+        action="store",
+        default=5.0,
+        type=float,
+        help="max delay value",
+    )
+             
     args = parser.parse_args()
     level = logging.WARNING
     if args.verbose:
@@ -101,6 +118,9 @@ def main():
 
     for r in required:
         fetch(r, spool + config.INCOMING)
+        sleeptime = random.uniform(args.mindelay, args.maxdelay)
+        logging.debug(f"sleeping for: {sleeptime} sec")
+        sleep(sleeptime)
 
 
 if __name__ == "__main__":
