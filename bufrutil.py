@@ -231,6 +231,7 @@ def gen_id(h):
 def convert_bufr_to_geojson(h,
                             filename=None,
                             archive=None,
+                            gtsTopic=None,
                             arrived=None,
                             channel=None):
     takeoff = datetime(
@@ -279,6 +280,7 @@ def convert_bufr_to_geojson(h,
         path_source="origin",
         encoding="BUFR",
         channel=channel,
+        gtsTopic=gtsTopic,
         fmt=config.FORMAT_VERSION,
 
     )

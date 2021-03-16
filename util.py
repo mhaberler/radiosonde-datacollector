@@ -116,6 +116,7 @@ _mapping = {
     "correctionAlgorithmsForHumidityMeasurements": "sonde_humcorr",
 
     "repfmt": None,      # FM-35 FM-94
+    "gtsTopic": "gts_topic",
     "channel": None,     # "GISC Tokyo"
     "archive": "origin_archive",
     "encoding": None,    # netCDF BUFR

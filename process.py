@@ -33,6 +33,9 @@ import util
 
 import magic
 
+import GTStoWIS2
+
+
 
 
 # for now, all netCDF files carry FM35, and BUFR files carry
@@ -207,16 +210,23 @@ def process_as(
         os.write(fd, data)
         os.lseek(fd, 0, os.SEEK_SET)
         infile = os.fdopen(fd)
-        
+
+        try:
+            gts_topic = g.mapAHLtoTopic(filename) 
+        except Exception as e:
+            gts_topic = None
+
         h = process_bufr(infile, filename=filename, archive=archive)
         infile.close()
         os.remove(path)
         if h == None:
             return False
         
-        fc = convert_bufr_to_geojson(
-            h, filename=filename, archive=archive, arrived=arrived, channel=chname
-        )
+        fc = convert_bufr_to_geojson(h, filename=filename,
+                                     archive=archive,
+                                     arrived=arrived,
+                                     gtsTopic=gts_topic,
+                                     channel=chname)
         if fc == None:
             return False
         if args.station and args.station != fc.properties["station_id"]:
@@ -555,7 +565,9 @@ def main():
     os.umask(0o22)
 
     global pool
-        
+    global gts2wis
+    gts2wis = GTStoWIS2(debug=False, dump_tables=False)
+    
     try:
         with pidfile.Pidfile(config.LOCKFILE + pathlib.Path(args.destdir).name + ".pid",
                              log=logging.debug,
