@@ -110,6 +110,7 @@ _mapping = {
     "trackingTechniqueOrStatusOfSystem": "sonde_track",
     "measuringEquipmentType": "sonde_measure",
     "softwareVersionNumber": "sonde_swversion",
+    "reasonForTermination" : "sonde_term",
     "radiosondeType": "sonde_type",
     "radiosondeSerialNumber": "sonde_serial",
     "radiosondeOperatingFrequency": "sonde_frequency",

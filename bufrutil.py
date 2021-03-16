@@ -81,6 +81,7 @@ def bufr_decode(f, filename):
         "geopotentialHeightCalculation",
         "trackingTechniqueOrStatusOfSystem",
         "measuringEquipmentType",
+        "reasonForTermination",
     ]
     fvals = [
         "radiosondeOperatingFrequency",
