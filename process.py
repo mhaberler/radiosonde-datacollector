@@ -212,7 +212,7 @@ def process_as(
         infile = os.fdopen(fd)
 
         try:
-            gts_topic = g.mapAHLtoTopic(filename) 
+            gts_topic = gts2wis.mapAHLtoTopic(filename) 
         except Exception as e:
             gts_topic = None
 
@@ -566,7 +566,7 @@ def main():
 
     global pool
     global gts2wis
-    gts2wis = GTStoWIS2(debug=False, dump_tables=False)
+    gts2wis = GTStoWIS2.GTStoWIS2(debug=False, dump_tables=False)
     
     try:
         with pidfile.Pidfile(config.LOCKFILE + pathlib.Path(args.destdir).name + ".pid",
