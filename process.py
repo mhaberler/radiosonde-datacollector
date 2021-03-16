@@ -212,7 +212,9 @@ def process_as(
         infile = os.fdopen(fd)
 
         try:
-            gts_topic = gts2wis.mapAHLtoTopic(filename) 
+            gts_topic = gts2wis.mapAHLtoTopic(filename)
+            logging.debug(f"GTS topic for {filename}: {gts_topic}"
+    )
         except Exception as e:
             gts_topic = None
 
