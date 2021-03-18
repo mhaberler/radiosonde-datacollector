@@ -71,7 +71,7 @@ channels = {
         "spooldir": SPOOLDIR_GISC_OFFENBACH,
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "keeptime": 0,
-        "retain" : 30, # days
+        "retain" : 14, # days
     },
     # "gisc-moscow": {
     #     "name":  "GISC Moscow",
@@ -84,7 +84,7 @@ channels = {
         "spooldir": SPOOLDIR_METEO_FR,
         "keeptime": 0,
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
-        "retain" : 30, # days
+        "retain" : 14, # days
 
         # "stations": [
         #     # 0,12
@@ -110,13 +110,13 @@ channels = {
         "spooldir": SPOOLDIR_GISC_TOKYO,
         "keeptime": 0,
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
-        "retain" : 30, # days
+        "retain" : 14, # days
     },
     "noaa-madis": {
         "name": "NOAA MADIS",
         "spooldir": SPOOLDIR_NOAA_MADIS,
         "keeptime": -1,
         "pattern": ".*\\.gz$",
-        "retain" : 30, # days
+        "retain" : 14, # days
     },
 }
