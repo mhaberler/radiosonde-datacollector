@@ -251,9 +251,7 @@ def process_as(
         if args.dump_geojson:
             pprint(fc)
 
-        syn_time = datetime.utcfromtimestamp(fc.properties["syn_timestamp"]).replace(
-            tzinfo=pytz.utc
-        )
+        syn_time = fc.properties["syn_timestamp"])
         detail = util.detail_path(destdir, repfmt, station_id, syn_time) + ".br"
 
         if pathlib.Path(detail).exists():
@@ -290,9 +288,7 @@ def process_as(
                 },
             )
             station_id = fc.properties["station_id"]
-            syn_time = datetime.utcfromtimestamp(
-                fc.properties["syn_timestamp"]
-            ).replace(tzinfo=pytz.utc)
+            syn_time = fc.properties["syn_timestamp"]
             detail = util.detail_path(destdir, repfmt, station_id, syn_time) + ".br"
             if pathlib.Path(detail).exists():
                 logging.debug(f"skipping dup: {filename}/{station_id} via {channel}")
