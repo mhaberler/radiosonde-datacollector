@@ -339,7 +339,7 @@ if __name__ == "__main__":
     import json
 
     parser = argparse.ArgumentParser(
-        description="extract ascent from netCDF file",
+        description="extract ascent from BUFR file",
         add_help=True,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
