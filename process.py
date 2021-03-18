@@ -462,8 +462,7 @@ def remove_files(spooldir, retain, subdirs, simulate=True):
     now = util.now()
     for s in subdirs:
         sd = spooldir + s
-        files = 
-        for f in spooldir.glob("*"):
+        for f in  pathlib.Path(spooldir).glob("*"):
             secs =  now - age(f) 
             if secs > retain * 86400:
                 logging.debug(f"removing: {f} age={secs/86400:.1f} days")
@@ -526,6 +525,7 @@ def main():
         help="extract a single station by WMO id",
     )
     parser.add_argument("--geojson", action="store_true", default=False)
+    parser.add_argument("--firstonly", action="store_true", default=False)
     parser.add_argument("-D", "--dump-geojson", action="store_true", default=False)
     parser.add_argument(
         "--sim-housekeep",
