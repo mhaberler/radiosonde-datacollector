@@ -500,18 +500,24 @@ def keep_house(args):
                    keeptime=0,
                    trace=args.verbose,
                    simulate=args.sim_housekeep)
-        remove_files(spooldir, retain,
-                    [config.INCOMING,
-                     config.PROCESSED,
-                     config.FAILED],
-                    simulate=args.sim_housekeep)
 
-        
+        if args.clean_spool:
+            remove_files(spooldir, retain,
+                         [config.INCOMING,
+                          config.PROCESSED,
+                          config.FAILED],
+                         simulate=args.sim_housekeep)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="decode radiosonde BUFR and netCDF reports", add_help=True
     )
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
+    parser.add_argument("-c", "--clean-spool",
+                        action="store_true",
+                        help="remove overage files from spool directories",
+                        default=False)
     parser.add_argument(
         "--hstep",
         action="store",
