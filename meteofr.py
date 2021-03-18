@@ -15,35 +15,56 @@ import config
 site = "https://donneespubliques.meteofrance.fr/donnees_libres/"
 prefix = "Bufr/RS_HR/"
 dest = "/var/spool/meteo-fr/incoming"
-
+dispos =  'https://donneespubliques.meteofrance.fr/donnees_libres/Pdf/RS/RSDispos.json'
 
 def current_bufrs(day, hour, stations):
     return [f"{station}.{day}{hour}.bfr" for station in stations]
 
 
-def looking_for(spool, fns):
+def received(spool, fn):
     found = []
-    for fn in fns:
-        # did we received this one already?
-        for subdir in [config.PROCESSED, config.INCOMING, config.FAILED]:
-            pn = spool + subdir + "/" + fn
-            if pathlib.Path(pn).exists():
-                found.append(fn)
-                break
-    return list(set(fns) - set(found))
+    # did we received this one already?
+    for subdir in [config.PROCESSED, config.INCOMING, config.FAILED]:
+        pn = spool + subdir + "/" + fn
+        if pathlib.Path(pn).exists():
+            return True
+    return False
 
-
-def fetch(bufr, dest):
+def fetch(bufr, dest, sleeptime=5, fetch=True):
     url = f"{site}{prefix}{bufr}"
+    if not fetch:
+        logging.debug(f"would retrieve: {url}")
+        return
     r = requests.get(url)
     if r:
         if "Last-Modified" in r.headers:
-            logging.debug(f"retrieving: {url}, modified: {r.headers['Last-Modified']}")
-            with open(f"{dest}/{bufr}", "wb") as f:
-                f.write(r.content)
+            logging.debug(f"retrieving: {url} -> {dest}/{bufr}, modified: {r.headers['Last-Modified']}")
+            if save:
+                with open(f"{dest}/{bufr}", "wb") as f:
+                    f.write(r.content)
         else:
             logging.debug(f"not yet available: {bufr}")
 
+    logging.debug(f"sleeping for: {sleeptime:.1f} sec")
+    sleep(sleeptime)
+
+def get_missing(day, hour, url, spool):
+    missing = []
+    r = requests.get(url)
+    if r:
+       bufrs = r.json()["Bufr/RS_HR/"]
+       for s in bufrs:
+           station = s["station"]
+           name  = s["nom"]
+           for d in  s["dates"]:
+               if d["jour"] == day:
+                   for hr in d["reseaux"]:
+                       h = int(hr)
+                       if hour > h:
+                           fn = f"{station}.{day}{hr}.bfr"
+                           if not received(spool, fn):
+                               missing.append(fn)
+    return missing
 
 def main():
     parser = argparse.ArgumentParser(
@@ -61,7 +82,6 @@ def main():
         "--stations",
         nargs="+",
         type=str,
-        required=True,
         help="station ID's to retrieve",
     )
     parser.add_argument(
@@ -72,8 +92,8 @@ def main():
     parser.add_argument(
         "--hour",
         action="store",
-        required=True,
         type=int,
+        default=None,
         help="hour",
     )
     parser.add_argument(
@@ -83,7 +103,12 @@ def main():
         type=float,
         help="min delay value",
     )
-        
+    parser.add_argument(
+        "-n", "--nofetch",
+        action="store_true",
+        default=False,
+        help="do not retrieve and save missing bufrs (debugging)",
+    )
     parser.add_argument(
         "--maxdelay",
         action="store",
@@ -105,36 +130,20 @@ def main():
     else:
         day = datetime.datetime.utcnow().strftime("%Y%m%d")
 
-    hour = f"{args.hour:02d}"
-    
+    if args.hour:
+        hour = args.hour
+    else:
+        hour = datetime.datetime.utcnow().hour
+
     c = config.channels["meteo-fr"]
     spool = c["spooldir"]
 
-    filenames = current_bufrs(day, hour, args.stations)
-    logging.debug(f"filenames: {filenames}")
-
-    required = looking_for(spool, filenames)
-    logging.debug(f"required: {required}")
-
-    for r in required:
-        fetch(r, spool + config.INCOMING)
+    missing = get_missing(day, hour, dispos, spool)
+    for r in missing:
         sleeptime = random.uniform(args.mindelay, args.maxdelay)
-        logging.debug(f"sleeping for: {sleeptime:.1f} sec")
-        sleep(sleeptime)
+        fetch(r, spool + config.INCOMING, sleeptime=sleeptime, fetch=not args.nofetch)
 
 
 if __name__ == "__main__":
     sys.exit(main())
 
-
-# check via JSON "ascents available" file:
-# url =  'https://donneespubliques.meteofrance.fr/donnees_libres/Pdf/RS/RSDispos.json'
-# r = requests.get(url)
-# print()
-# al = r.json()["Bufr/RS_HR/"]
-# for s in al:
-#     station = s["station"]
-#     name  = s["nom"]
-#     for d in  s["dates"]:
-#         day = d["jour"]
-#         ascents = d["reseaux"]
