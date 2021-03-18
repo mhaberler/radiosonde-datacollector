@@ -462,12 +462,12 @@ def remove_files(spooldir, retain, subdirs, simulate=True):
     now = util.now()
     for s in subdirs:
         sd = spooldir + s
-        for f in  pathlib.Path(spooldir).glob("*"):
-            secs =  now - age(f) 
+        for f in  pathlib.Path(sd).glob("*"):
+            secs =  now - util.age(f) 
             if secs > retain * 86400:
                 logging.debug(f"removing: {f} age={secs/86400:.1f} days")
-#                if not simulate:
-#                    os.path.unlink(f):
+                if not simulate:
+                    os.path.unlink(f):
         
         
 
