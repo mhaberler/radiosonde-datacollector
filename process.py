@@ -458,6 +458,20 @@ def move_files(
                         logging.debug(f"moving: {tspath} --> {dtspath}")
                     tspath.rename(dtspath)
 
+def remove_files(spooldir, retain, subdirs, simulate=True):
+    now = util.now()
+    for s in subdirs:
+        sd = spooldir + s
+        files = 
+        for f in spooldir.glob("*"):
+            secs =  now - age(f) 
+            if secs > retain * 86400:
+                logging.debug(f"removing: {f} age={secs/86400:.1f} days")
+#                if not simulate:
+#                    os.path.unlink(f):
+        
+        
+
 
 def keep_house(args):
 
@@ -465,6 +479,7 @@ def keep_house(args):
         spooldir = desc["spooldir"]
         pattern = desc["pattern"]
         keeptime = desc["keeptime"]
+        retain = desc["keeptime"]
         if keeptime: # madis special case
             keeptime=args.keep_time
 
@@ -484,6 +499,11 @@ def keep_house(args):
                    keeptime=0,
                    trace=args.verbose,
                    simulate=args.sim_housekeep)
+        remove_files(spooldir, retain,
+                    [config.INCOMING,
+                     config.PROCESSED,
+                     config.FAILED],
+                    simulate=args.sim_housekeep)
 
         
 def main():
