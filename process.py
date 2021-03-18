@@ -468,9 +468,10 @@ def remove_files(spooldir, retain, subdirs, simulate=True):
             if secs > retain * 86400:
                 logging.debug(f"removing: {f} age={secs/86400:.1f} days")
                 if not simulate:
-                    os.path.unlink(f)
-        
-        
+                    try:
+                        f.unlink()
+                    except Exception as e:
+                        logging.error(f"failed to unlink {f}: {e}")
 
 
 def keep_house(args):
