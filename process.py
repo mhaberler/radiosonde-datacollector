@@ -459,6 +459,7 @@ def move_files(
                     tspath.rename(dtspath)
 
 def remove_files(spooldir, retain, subdirs, simulate=True):
+    
     now = util.now()
     for s in subdirs:
         sd = spooldir + s
