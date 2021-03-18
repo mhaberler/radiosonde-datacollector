@@ -251,7 +251,7 @@ def process_as(
         if args.dump_geojson:
             pprint(fc)
 
-        syn_time = fc.properties["syn_timestamp"])
+        syn_time = fc.properties["syn_timestamp"]
         detail = util.detail_path(destdir, repfmt, station_id, syn_time) + ".br"
 
         if pathlib.Path(detail).exists():
