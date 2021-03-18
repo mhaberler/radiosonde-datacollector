@@ -167,7 +167,7 @@ def detail_path(destdir, repfmt, station_id, syn_timestamp):
     year = syn_time.strftime("%Y")
     month = syn_time.strftime("%m")
     time = syn_time.strftime("%H%M%S")
-    return f"{repfmt}/{cc}/{subdir}/{year}/{month}/{station_id}_{day}_{time}.geojson"
+    return f"{destdir}/{repfmt}/{cc}/{subdir}/{year}/{month}/{station_id}_{day}_{time}.geojson"
 
 
 def wind_to_UV(windSpeed, windDirection):
