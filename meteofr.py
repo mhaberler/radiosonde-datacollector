@@ -39,7 +39,7 @@ def fetch(bufr, dest, sleeptime=5, fetch=True):
     if r:
         if "Last-Modified" in r.headers:
             logging.debug(f"retrieving: {url} -> {dest}/{bufr}, modified: {r.headers['Last-Modified']}")
-            if save:
+            if fetch:
                 with open(f"{dest}/{bufr}", "wb") as f:
                     f.write(r.content)
         else:
