@@ -9,11 +9,12 @@ import sys
 import tempfile
 import time
 import zipfile
-import traceback
 from operator import itemgetter
 from pprint import pprint
 from multiprocessing import Pool, cpu_count
 from multiprocessing_logging import install_mp_handler
+from datetime import datetime
+import pytz
 
 import geojson
 
@@ -27,15 +28,11 @@ import pidfile
 
 import config
 
-import customtypes
-
 import util
 
 import magic
 
 import GTStoWIS2
-
-
 
 
 # for now, all netCDF files carry FM35, and BUFR files carry
@@ -50,6 +47,7 @@ def filetype(s, m):
             return "unknown", "data"
         return "fm94", "BUFR"
     return "unknown", fmt
+
 
 def update_geojson_summary(args, stations, updated_stations, summary):
 
@@ -76,7 +74,9 @@ def update_geojson_summary(args, stations, updated_stations, summary):
 
             pruned = [x for x in oldlist if x["syn_timestamp"] > cutoff_ts]
 
-            newlist = sorted(pruned, key=itemgetter("syn_timestamp", "repfmt"), reverse=True)
+            newlist = sorted(
+                pruned, key=itemgetter("syn_timestamp", "repfmt"), reverse=True
+            )
             # https://stackoverflow.com/questions/9427163/remove-duplicate-dict-in-list-in-python
             seen = set()
             dedup = []
@@ -173,6 +173,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
     useBrotli = args.summary.endswith(".br")
     util.write_json_file(fc, args.summary, useBrotli=useBrotli, asGeojson=True)
 
+
 # trim summary to minimum required
 def slimdown(st):
     ascents = st.properties["ascents"]
@@ -183,7 +184,7 @@ def slimdown(st):
 
     for a in ascents:
         for k in list(a.keys()):
-            if k not in ["repfmt", "syn_timestamp", "lat", "lon","elevation"]:
+            if k not in ["repfmt", "syn_timestamp", "lat", "lon", "elevation"]:
                 a.pop(k, None)
         if st.properties["id_type"] == "wmo":
             # fixed station. Take coords from geometry.coords.
@@ -193,9 +194,18 @@ def slimdown(st):
 
     return result
 
-    
+
 def process_as(
-        args, channel, repfmt, encoding, data, filename, archive, destdir, arrived, updated_stations
+    args,
+    channel,
+    repfmt,
+    encoding,
+    data,
+    filename,
+    archive,
+    destdir,
+    arrived,
+    updated_stations,
 ):
 
     chname = config.channels[channel]["name"]
@@ -205,6 +215,7 @@ def process_as(
     )
 
     if encoding == "BUFR":
+
         #  e=initializer for ctype 'FILE *' must be a cdata pointer, not bytes
         fd, path = tempfile.mkstemp(dir=config.tmpdir)
         os.write(fd, data)
@@ -213,32 +224,48 @@ def process_as(
 
         try:
             gts_topic = gts2wis.mapAHLtoTopic(filename)
-            logging.debug(f"GTS topic for {filename}: {gts_topic}"
-    )
-        except Exception as e:
+            logging.debug(f"GTS topic for {filename}: {gts_topic}")
+        except Exception:
             gts_topic = None
 
         h = process_bufr(infile, filename=filename, archive=archive)
         infile.close()
         os.remove(path)
-        if h == None:
+        if h is None:
             return False
-        
-        fc = convert_bufr_to_geojson(h, filename=filename,
-                                     archive=archive,
-                                     arrived=arrived,
-                                     gtsTopic=gts_topic,
-                                     channel=chname)
-        if fc == None:
+
+        fc = convert_bufr_to_geojson(
+            h,
+            filename=filename,
+            archive=archive,
+            arrived=arrived,
+            gtsTopic=gts_topic,
+            channel=chname,
+        )
+        if fc is None:
             return False
-        if args.station and args.station != fc.properties["station_id"]:
+
+        station_id = fc.properties["station_id"]
+        if args.station and args.station != station_id:
             return
         if args.dump_geojson:
             pprint(fc)
 
-        station_id = fc.properties["station_id"]
+        syn_time = datetime.utcfromtimestamp(fc.properties["syn_timestamp"]).replace(
+            tzinfo=pytz.utc
+        )
+        detail = util.detail_path(destdir, repfmt, station_id, syn_time) + ".br"
+
+        if pathlib.Path(detail).exists():
+            logging.debug(f"skipping dup: {filename}/{station_id} via {channel}")
+            return True
+
+        logging.debug(
+            f"output samples retained: {len(fc.features)}," f" station id={station_id}"
+        )
+
         updated_stations.append((station_id, fc.properties))
-        return write_geojson(destdir, repfmt, fc)
+        return write_geojson(detail, fc)
 
     if encoding == "netCDF":
         results = process_netcdf(
@@ -251,6 +278,7 @@ def process_as(
 
         success = True
 
+        args = []
         for fc in results:
             util.set_metadata_from_dict(
                 fc.properties,
@@ -258,17 +286,25 @@ def process_as(
                     "repfmt": repfmt,
                     "channel": chname,
                     "encoding": "netCDF",
-                    "id_type": "wmo"
+                    "id_type": "wmo",
                 },
             )
             station_id = fc.properties["station_id"]
-            updated_stations.append((station_id, fc.properties))
+            syn_time = datetime.utcfromtimestamp(
+                fc.properties["syn_timestamp"]
+            ).replace(tzinfo=pytz.utc)
+            detail = util.detail_path(destdir, repfmt, station_id, syn_time) + ".br"
+            if pathlib.Path(detail).exists():
+                logging.debug(f"skipping dup: {filename}/{station_id} via {channel}")
+                continue
 
-        args =  [(destdir, repfmt, f) for f in results]
+            updated_stations.append((station_id, fc.properties))
+            args.append((detail, fc))
+
         r = pool.starmap(write_geojson, args)
-        logging.debug(f'{len(args)} jobs finished, success={not False in r}')
-        success = not False in r
-            
+        logging.debug(f"{len(args)} jobs finished, success={not False in r}")
+        success = False not in r
+
         return success
 
     logging.error(f"{archive}:{filename} : unknown file type {encoding}")
@@ -289,10 +325,12 @@ def process_files(args, wdict, updated_stations):
                 arrived = int(util.age(filename))
 
                 (fn, ext) = os.path.splitext(filename)
-                #logging.debug(f"processing: {filename} fn={fn} ext={ext}")
+                # logging.debug(f"processing: {filename} fn={fn} ext={ext}")
 
                 if ext == ".zip":
-                    logging.debug(f"processing zip archive: {filename} fn={fn} ext={ext}")
+                    logging.debug(
+                        f"processing zip archive: {filename} fn={fn} ext={ext}"
+                    )
 
                     try:
                         with zipfile.ZipFile(filename) as zf:
@@ -305,15 +343,17 @@ def process_files(args, wdict, updated_stations):
 
                                 except KeyError:
                                     logging.error(
-                                        f"zip file {f}: no such member {info.filename}"
+                                        f"zip file {filename}: no such member {info.filename}"
                                     )
                                     continue
                                 else:
                                     repfmt, encoding = filetype(data, magique)
                                     if repfmt not in ["fm35", "fm94"]:
-                                        logging.debug(f"skipping member: {info.filename} repfmt={repfmt} encoding={encoding}")
+                                        logging.debug(
+                                            f"skipping member: {info.filename} repfmt={repfmt} encoding={encoding}"
+                                        )
                                         continue
-                                    
+
                                     success = process_as(
                                         args,
                                         chan,
@@ -325,7 +365,7 @@ def process_files(args, wdict, updated_stations):
                                         args.destdir,
                                         arrived,
                                         updated_stations,
-                                    ) 
+                                    )
 
                                     zip_success = zip_success and success
 
@@ -400,11 +440,14 @@ def build_work_items(arg_channels):
     fdict = {}
     for c in chan:
         d = config.channels[c]
-        g = [str(f) for f in list(pathlib.Path(d["spooldir"] + config.INCOMING + "/").glob("*"))]
+        g = [
+            str(f)
+            for f in list(pathlib.Path(d["spooldir"] + config.INCOMING + "/").glob("*"))
+        ]
         m = re.compile(d["pattern"])
         files = [f for f in g if m.search(f)]
         fdict[c] = [str(f) for f in files]
-                       
+
     return fdict
 
 
@@ -425,7 +468,7 @@ def move_files(
             logging.debug(f"creating dir: {spooldir}")
         else:
             spooldir.mkdir(mode=0o755, parents=True, exist_ok=False)
-    
+
     # if trace:
     #     logging.debug(f"spooldir={spooldir} pattern={pattern} tsextension={tsextension}")
 
@@ -433,7 +476,7 @@ def move_files(
     for path in spooldir.glob("*"):
         if not m.search(str(path)):
             continue
-        
+
         # if trace:
         #     logging.debug(f"lookat: {path}")
         tspath = path.parent / pathlib.Path(path.stem + tsextension)
@@ -458,13 +501,14 @@ def move_files(
                         logging.debug(f"moving: {tspath} --> {dtspath}")
                     tspath.rename(dtspath)
 
+
 def remove_files(spooldir, retain, subdirs, simulate=True):
-    
+
     now = util.now()
     for s in subdirs:
         sd = spooldir + s
-        for f in  pathlib.Path(sd).glob("*"):
-            secs =  now - util.age(f) 
+        for f in pathlib.Path(sd).glob("*"):
+            secs = now - util.age(f)
             if secs > retain * 86400:
                 logging.debug(f"removing: {f} age={secs/86400:.1f} days")
                 if not simulate:
@@ -481,32 +525,37 @@ def keep_house(args):
         pattern = desc["pattern"]
         keeptime = desc["keeptime"]
         retain = desc["retain"]
-        if keeptime: # madis special case
-            keeptime=args.keep_time
+        if keeptime:  # madis special case
+            keeptime = args.keep_time
 
         logging.debug(f"janitor at: {chan} retain={retain}")
 
-        move_files(spooldir + config.INCOMING,
-                   pattern,
-                   config.TS_PROCESSED,
-                   spooldir + config.PROCESSED,
-                   keeptime=keeptime,
-                   trace=args.verbose,
-                   simulate=args.sim_housekeep)
-        move_files(spooldir + config.INCOMING,
-                   pattern,
-                   config.TS_FAILED,
-                   spooldir + config.FAILED,
-                   keeptime=0,
-                   trace=args.verbose,
-                   simulate=args.sim_housekeep)
+        move_files(
+            spooldir + config.INCOMING,
+            pattern,
+            config.TS_PROCESSED,
+            spooldir + config.PROCESSED,
+            keeptime=keeptime,
+            trace=args.verbose,
+            simulate=args.sim_housekeep,
+        )
+        move_files(
+            spooldir + config.INCOMING,
+            pattern,
+            config.TS_FAILED,
+            spooldir + config.FAILED,
+            keeptime=0,
+            trace=args.verbose,
+            simulate=args.sim_housekeep,
+        )
 
         if args.clean_spool:
-            remove_files(spooldir, retain,
-                         [config.INCOMING,
-                          config.PROCESSED,
-                          config.FAILED],
-                         simulate=args.sim_housekeep)
+            remove_files(
+                spooldir,
+                retain,
+                [config.INCOMING, config.PROCESSED, config.FAILED],
+                simulate=args.sim_housekeep,
+            )
 
 
 def main():
@@ -514,10 +563,13 @@ def main():
         description="decode radiosonde BUFR and netCDF reports", add_help=True
     )
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
-    parser.add_argument("-c", "--clean-spool",
-                        action="store_true",
-                        help="remove overage files from spool directories",
-                        default=False)
+    parser.add_argument(
+        "-c",
+        "--clean-spool",
+        action="store_true",
+        help="remove overage files from spool directories",
+        default=False,
+    )
     parser.add_argument(
         "--hstep",
         action="store",
@@ -597,11 +649,13 @@ def main():
     global pool
     global gts2wis
     gts2wis = GTStoWIS2.GTStoWIS2(debug=False, dump_tables=False)
-    
+
     try:
-        with pidfile.Pidfile(config.LOCKFILE + pathlib.Path(args.destdir).name + ".pid",
-                             log=logging.debug,
-                             warn=logging.debug) as pf, Pool(cpu_count()) as pool:
+        with pidfile.Pidfile(
+            config.LOCKFILE + pathlib.Path(args.destdir).name + ".pid",
+            log=logging.debug,
+            warn=logging.debug,
+        ) as pf, Pool(cpu_count()) as pool:
 
             config.known_stations = json.loads(util.read_file(args.stations).decode())
             updated_stations = []
@@ -631,7 +685,7 @@ def main():
 
             if not args.sim_housekeep and updated_stations:
                 logging.debug(f"creating GeoJSON summary: {args.summary}")
-                #pprint(updated_stations)
+                # pprint(updated_stations)
                 update_geojson_summary(
                     args, config.known_stations, updated_stations, summary
                 )

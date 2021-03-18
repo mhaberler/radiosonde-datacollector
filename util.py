@@ -1,10 +1,12 @@
-from math import cos, sin, isnan, nan, pi
 import json
-import shutil
+from math import cos, isnan, nan, pi, sin
 import logging
+import shutil
 import os
+import re
 import tempfile
 import time
+import pytz
 from datetime import datetime
 
 import numpy as np
@@ -13,13 +15,13 @@ import brotli
 
 import config
 
-import geojson
-
 import constants
 
-import customtypes
+import geojson
 
 import config
+
+import customtypes
 
 
 def _round(val, decimals):
@@ -39,7 +41,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
-    
+
 # from https://gist.githubusercontent.com/chrisjsimpson/076a82b51e8540a117e8aa5e793d06ec/raw/b29d410f10236a7dd420d9688eef278c458a8cbf/dms2dec.py
 
 """
@@ -51,56 +53,50 @@ DEC = (DEG + (MIN * 1/60) + (SEC * 1/60 * 1/60))
 Assumes S/W are negative. 
 """
 
-import re
 
 def dms2dec(dms_str):
     """Return decimal representation of DMS
-    
+
     >>> dms2dec(utf8(48°53'10.18"N))
     48.8866111111F
-    
+
     >>> dms2dec(utf8(2°20'35.09"E))
     2.34330555556F
-    
+
     >>> dms2dec(utf8(48°53'10.18"S))
     -48.8866111111F
-    
+
     >>> dms2dec(utf8(2°20'35.09"W))
     -2.34330555556F
-    
+
     """
-    
-    #dms_str = re.sub(r'\s', '', dms_str)
-    
-    sign = -1 if re.search('[swSW]', dms_str) else 1
-    
-    numbers = [*filter(len, re.split('\D+', dms_str, maxsplit=4))]
+
+    sign = -1 if re.search("[swSW]", dms_str) else 1
+
+    numbers = [*filter(len, re.split("\\D+", dms_str, maxsplit=4))]
 
     degree = numbers[0]
-    minute = numbers[1] if len(numbers) >= 2 else '0'
-    second = numbers[2] if len(numbers) >= 3 else '0'
-    frac_seconds = numbers[3] if len(numbers) >= 4 else '0'
-    
+    minute = numbers[1] if len(numbers) >= 2 else "0"
+    second = numbers[2] if len(numbers) >= 3 else "0"
+    frac_seconds = numbers[3] if len(numbers) >= 4 else "0"
+
     second += "." + frac_seconds
     return sign * (int(degree) + float(minute) / 60 + float(second) / 3600)
 
 
 _mapping = {
-
     "station": "station_id",
     "stationName": "station_name",
     "sondTyp": "sonde_type",
     "id_type": None,
-    
-    "encoding": None,                 
-    "format":   None,                     
-    "source": None,                       # "MADIS": "GISC DWD" ...
+    "encoding": None,
+    "format": None,
+    "source": None,  # "MADIS": "GISC DWD" ...
     "origin": None,
     "arrived": None,
     "text": None,
     "fmt": None,
-
-    "path_source":    None,               # simulated gps
+    "path_source": None,  # simulated gps
     "relTime": "firstSeen",
     "synTime": "syn_timestamp",
     "pressureSensorType": "sonde_psensor",
@@ -110,19 +106,17 @@ _mapping = {
     "trackingTechniqueOrStatusOfSystem": "sonde_track",
     "measuringEquipmentType": "sonde_measure",
     "softwareVersionNumber": "sonde_swversion",
-    "reasonForTermination" : "sonde_term",
+    "reasonForTermination": "sonde_term",
     "radiosondeType": "sonde_type",
     "radiosondeSerialNumber": "sonde_serial",
     "radiosondeOperatingFrequency": "sonde_frequency",
     "correctionAlgorithmsForHumidityMeasurements": "sonde_humcorr",
-
-    "repfmt": None,      # FM-35 FM-94
+    "repfmt": None,  # FM-35 FM-94
     "gtsTopic": "gts_topic",
-    "channel": None,     # "GISC Tokyo"
+    "channel": None,  # "GISC Tokyo"
     "archive": "origin_archive",
-    "encoding": None,    # netCDF BUFR
+    "encoding": None,  # netCDF BUFR
     "filename": "origin_member",
-
 }
 
 
@@ -145,25 +139,36 @@ def set_metadata(properties, **kwargs):
         properties["lat"] = config.known_stations[station]["lat"]
         properties["elevation"] = config.known_stations[station]["elevation"]
 
-    for k, v in kwargs.items():
+    for k in kwargs.keys():
         if k not in _mapping:
             raise KeyError(f"invalid argument: {k}")
         rk = _mapping[k]
         if isinstance(rk, str):
             properties[rk] = kwargs[k]
-        if rk == None:
+        if rk is None:
             properties[k] = kwargs[k]
 
-            
+
 def set_metadata_from_dict(properties, d):
     for k in _mapping:
         if k in d:
             rk = _mapping[k]
             if isinstance(rk, str):
                 properties[rk] = d[k]
-            if rk == None:
-                properties[k] = d[k]    
-            
+            if rk is None:
+                properties[k] = d[k]
+
+
+def detail_path(destdir, repfmt, station_id, syn_timestamp):
+    cc = station_id[:2]
+    subdir = station_id[2:5]
+    syn_time = datetime.utcfromtimestamp(syn_timestamp).replace(tzinfo=pytz.utc)
+    day = syn_time.strftime("%Y%m%d")
+    year = syn_time.strftime("%Y")
+    month = syn_time.strftime("%m")
+    time = syn_time.strftime("%H%M%S")
+    return f"{repfmt}/{cc}/{subdir}/{year}/{month}/{station_id}_{day}_{time}.geojson"
+
 
 def wind_to_UV(windSpeed, windDirection):
     if isnan(windSpeed) or isnan(windDirection):
@@ -181,17 +186,24 @@ def latlonPlusDisplacement(lat=0, lon=0, u=0, v=0):
 
 
 def height_to_geopotential_height(height):
-    return constants.earth_gravity / ((
-        1 / height) + 1 / constants.earth_avg_radius) / constants.earth_gravity
+    return (
+        constants.earth_gravity
+        / ((1 / height) + 1 / constants.earth_avg_radius)
+        / constants.earth_gravity
+    )
 
 
 def geopotential_height_to_height(geopotential):
-    return constants.earth_gravity * (geopotential * constants.earth_avg_radius) / (constants.earth_gravity * constants.earth_avg_radius - geopotential)
+    return (
+        constants.earth_gravity
+        * (geopotential * constants.earth_avg_radius)
+        / (constants.earth_gravity * constants.earth_avg_radius - geopotential)
+    )
 
 
 def now():
     return int(time.time())
-    #return int(datetime.utcnow().timestamp())
+    # return int(datetime.utcnow().timestamp())
 
 
 def age(filename):
@@ -252,12 +264,11 @@ def write_file(s, name, useBrotli=False):
         dl = len(s)
         ratio = (1.0 - dl / sl) * 100.0
         logging.debug(
-            f"w {name}: brotli {sl} -> {dl},"
-            f" compression={ratio:.1f}% in {dt:.3f}s"
+            f"w {name}: brotli {sl} -> {dl}," f" compression={ratio:.1f}% in {dt:.3f}s"
         )
     os.write(fd, s)
     os.fsync(fd)
     os.close(fd)
     shutil.move(path, name)
-    #os.rename(path, name)
+    # os.rename(path, name)
     os.chmod(name, 0o644)
