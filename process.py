@@ -224,7 +224,6 @@ def process_as(
 
         try:
             gts_topic = gts2wis.mapAHLtoTopic(filename)
-            logging.debug(f"GTS topic for {filename}: {gts_topic}")
         except Exception:
             gts_topic = None
 
@@ -246,6 +245,9 @@ def process_as(
             return False
 
         station_id = fc.properties["station_id"]
+        if gts_topic:
+            logging.debug(f"GTS topic for {station_id}/{filename}: {gts_topic}")
+
         if args.station and args.station != station_id:
             return
         if args.dump_geojson:
