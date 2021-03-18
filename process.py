@@ -479,11 +479,11 @@ def keep_house(args):
         spooldir = desc["spooldir"]
         pattern = desc["pattern"]
         keeptime = desc["keeptime"]
-        retain = desc["keeptime"]
+        retain = desc["retain"]
         if keeptime: # madis special case
             keeptime=args.keep_time
 
-        logging.debug(f"janitor at: {chan}")
+        logging.debug(f"janitor at: {chan} retain={retain}")
 
         move_files(spooldir + config.INCOMING,
                    pattern,
