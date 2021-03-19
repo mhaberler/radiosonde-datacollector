@@ -129,7 +129,7 @@ def  main():
             nf = walkt_tree(pool, pathlib.Path(args.fm94),'*.geojson.br')
             
             dump_bboxes(points, args.bbox)
-            logging.debug(f"{nf} flights")
+            logging.warning(f"{nf} flights")
             
         except pidfile.ProcessRunningException:
             logging.error(f"the pid file {config.LOCKFILE} is in use, exiting.")
