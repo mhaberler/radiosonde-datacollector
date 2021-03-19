@@ -121,7 +121,7 @@ def  main():
     os.umask(0o22)
     
     with pidfile.Pidfile(
-            config.LOCKFILE + pathlib.Path(args.destdir).name + ".pid",
+            config.LOCKFILE + config.DATA_DIR.rstrip("/") + ".pid",
             log=logging.debug,
             warn=logging.debug,
     ) as pf, Pool(cpu_count()) as pool:
