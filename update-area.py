@@ -13,8 +13,6 @@ from simplify import Simplify2D
 
 import config
 
-import pidfile
-
 import util
 
 
@@ -148,11 +146,8 @@ def  main():
     install_mp_handler()
     os.umask(0o22)
     
-    with pidfile.Pidfile(
-            config.LOCKFILE + config.DATA_DIR.rstrip("/") + ".pid",
-            log=logging.debug,
-            warn=logging.debug,
-    ) as pf, Pool(cpu_count()) as pool:
+    # no need for pidfile locking
+    with Pool(cpu_count()) as pool:
         try:
             hull = geojson.FeatureCollection([])
             bbox = geojson.FeatureCollection([])
