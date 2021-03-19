@@ -1,3 +1,4 @@
+import argparse
 import pathlib
 import brotli
 import geojson
@@ -8,9 +9,9 @@ from vincenty import vincenty
 from pprint import pprint
 import geopandas
 
+import config
 
-MADIS = r'/var/www/radiosonde.mah.priv.at/data-dev/madis'
-GISC = r'/var/www/radiosonde.mah.priv.at/data-dev/gisc'
+import util
 
 def latlon(f):
     return (f['geometry']['coordinates'][1],
@@ -28,16 +29,15 @@ def dump_bboxes(points, filename):
         lbot,rtop = bounding_box_naive(pts)
         llon, llat = lbot
         rlon, rlat = rtop
-        print(st, lbot,rtop)
+        logging.debug(f"w {st}: {lbot} {rtop}")
 
         f = geojson.Feature(geometry=geojson.MultiLineString([[(llat,llon), (rlat,llon), (rlat,rlon),(llat,rlon),(llat,llon)]]),
                             properties= {
                                 'station_id': st
                             })
         fc.features.append(f)
-    with open(filename, "wb") as jfile:
-        gj = geojson.dumps(fc, indent=4).encode("utf8")
-        jfile.write(gj)
+
+    write_json_file(fc, filename, useBrotli=True, asGeojson=True)
 
 
 def bounding_box_naive(points):
@@ -82,33 +82,46 @@ def walkt_tree(directory, pattern):
     nu = 0
     for path in sorted(directory.rglob(pattern)):
         #print(path, file=sys.stderr)
-        with open(path, mode='rb') as f:
-            s = f.read()
-            nu += len(s)
-            if path.suffix == '.br':
-                s = brotli.decompress(s)
-                nc += len(s)
-            gj = geojson.loads(s.decode())
-            nf += 1
-            r = extent(gj)
-            if r:
-                flights.append(r)
+        gj = util.read_json_file(path, useBrotli=True, asGeojson=True):
+        nf += 1
+        r = extent(gj)
+        if r:
+            flights.append(r)
     return nf
 
-def  main(dirlist):
-    nf = 0
-    for d in dirlist:
-        nf += walkt_tree(pathlib.Path(d),'*.geojson.br')
+def  main():
+    parser = argparse.ArgumentParser(
+        description="rebuild fm94 bounding boxes.json",
+        add_help=True,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", default=False)
+    parser.add_argument(
+        "--bbox",
+        action="store",
+        default=config.WWW_DIR + config.DATA_DIR + config.FM94_BBOX,
+        help="path of brotli-compressed bbox-fm94.geojson.br",
+    )
+    parser.add_argument(
+        "--fm94",
+        action="store",
+        default=config.FM94_DATA,
+        help="path to fm94 dir",
+    )
+    args = parser.parse_args()
 
-    dump_bboxes(points, "flight-bbox.geojson")
+    level = logging.WARNING
+    if args.verbose:
+        level = logging.DEBUG
 
+    logging.basicConfig(level=level)
+    os.umask(0o22)
 
-    f = sorted(flights, key=lambda tup: tup[1])
-    print(f"{nf} flights")
-    pprint(f)
+    nf = walkt_tree(pathlib.Path(args.fm94),'*.geojson.br')
+    dump_bboxes(points, args.bbox)
+
+    logging.debug(f"{nf} flights")
+
 
 if __name__ == "__main__":
-    dirlist = [GISC]
-    #dirlist = ['gisc/']
-
     sys.exit(main(dirlist))
