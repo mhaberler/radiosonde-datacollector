@@ -31,11 +31,15 @@ def dump_bboxes(points, filename):
             continue
 
         lbot,rtop = bounding_box_naive(pts)
-f        llon, llat = lbot
+        llon, llat = lbot
         rlon, rlat = rtop
         logging.debug(f"w {st}: {lbot} {rtop}")
 
-        f = geojson.Feature(geometry=geojson.MultiLineString([[(llat,llon), (rlat,llon), (rlat,rlon),(llat,rlon),(llat,llon)]]),
+        f = geojson.Feature(geometry=geojson.MultiLineString([[(lLON,llon),
+                                                               (rLON,llon),
+                                                               (rLON,rlon),
+                                                               (lLON,rlon),
+                                                               (lLON,llon)]]),
                             properties= {
                                 'station_id': st
                             })
@@ -146,18 +150,18 @@ def walkt_tree(pool, directory, pattern, sid, hull, bbox):
     llat = min(point[1] for point in c)
     rlon = max(point[0] for point in c)
     rlat = max(point[1] for point in c)
-    f = geojson.Feature(geometry=geojson.MultiLineString([[(llat,llon),
-                                                           (rlat,llon),
-                                                           (rlat,rlon),
-                                                           (llat,rlon),
-                                                           (llat,llon)]]),
+    f = geojson.Feature(geometry=geojson.MultiLineString([[(llon,llat),
+                                                           (rlon,llat),
+                                                           (rlon,rlat),
+                                                           (llon,rlat),
+                                                           (llon,llat)]]),
                         properties= {
                             'station_id': sid,
                             'name': sname
                         })
     bbox.features.append(f)
     
-    slat = station_list[sid]["lat"]
+    sLON = station_list[sid]["lat"]
     slon = station_list[sid]["lon"]
     mlat, mlon, md = max_distance(slat, slon, coords)
 
