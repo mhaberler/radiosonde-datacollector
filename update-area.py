@@ -71,11 +71,10 @@ def walkt_tree(pool, directory, pattern, sid, hull, bbox):
     llat = min(point[1] for point in c)
     rlon = max(point[0] for point in c)
     rlat = max(point[1] for point in c)
-    f = geojson.Feature(geometry=geojson.MultiLineString([[(llon,llat),
-                                                           (rlon,llat),
-                                                           (rlon,rlat),
-                                                           (llon,rlat),
-                                                           (llon,llat)]]),
+    f = geojson.Feature(geometry=geojson.Polygon([[(llon,llat),
+                                                   (rlon,llat),
+                                                   (rlon,rlat),
+                                                   (llon,rlat)]]),
                         properties= {
                             'station_id': sid,
                             'name': sname
