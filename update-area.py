@@ -31,7 +31,7 @@ def dump_bboxes(points, filename):
             continue
 
         lbot,rtop = bounding_box_naive(pts)
-        llon, llat = lbot
+f        llon, llat = lbot
         rlon, rlat = rtop
         logging.debug(f"w {st}: {lbot} {rtop}")
 
@@ -141,9 +141,11 @@ def walkt_tree(pool, directory, pattern, sid, hull, bbox):
     }
     hull.features.append(f)
 
-    lbot,rtop = bounding_box_naive(coords)
-    llon, llat = lbot
-    rlon, rlat = rtop
+
+    llon = min(point[0] for point in c)
+    llat = min(point[1] for point in c)
+    rlon = max(point[0] for point in c)
+    rlat = max(point[1] for point in c)
     f = geojson.Feature(geometry=geojson.MultiLineString([[(llat,llon),
                                                            (rlat,llon),
                                                            (rlat,rlon),
