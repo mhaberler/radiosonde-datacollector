@@ -17,78 +17,6 @@ import pidfile
 
 import util
 
-def latlon(f):
-    return (f['geometry']['coordinates'][1],
-            f['geometry']['coordinates'][0])
-
-#12374 [(51.71204, 20.90611), (52.81019, 23.51059)]
-def dump_bboxes(points, filename):
-    fc = geojson.FeatureCollection([])
-
-
-    for st, pts in points.items():
-        if len(pts) == 0:
-            continue
-
-        lbot,rtop = bounding_box_naive(pts)
-        llon, llat = lbot
-        rlon, rlat = rtop
-        logging.debug(f"w {st}: {lbot} {rtop}")
-
-        f = geojson.Feature(geometry=geojson.MultiLineString([[(lLON,llon),
-                                                               (rLON,llon),
-                                                               (rLON,rlon),
-                                                               (lLON,rlon),
-                                                               (lLON,llon)]]),
-                            properties= {
-                                'station_id': st
-                            })
-        fc.features.append(f)
-
-    util.write_json_file(fc,
-                         filename,
-                         useBrotli=filename.endswith(".br"),
-                         asGeojson=True)
-
-
-def bounding_box_naive(points):
-    bot_left_x = min(point[0] for point in points)
-    bot_left_y = min(point[1] for point in points)
-    top_right_x = max(point[0] for point in points)
-    top_right_y = max(point[1] for point in points)
-
-    return [(bot_left_x, bot_left_y), (top_right_x, top_right_y)]
-
-points = {}
-
-def extent(gj):
-    if gj.properties['id_type'] != "wmo":
-        return
-    stid = gj.properties['station_id']
-    if stid not in points:
-        points[stid] = []
-
-    takeoff = latlon(gj.features[0])
-    maxd = 0
-    pts = []
-
-    for f in gj.features:
-        cp = latlon(f)
-        d = vincenty(takeoff, cp, miles=False)
-        if not d:
-            continue
-        pts.append(cp)
-        if d > maxd:
-            maxd = d
-
-    points[stid].extend(pts)
-    if d < 0.1:
-        return None
-    return gj.properties['station_id'], d
-
-flights = []
-
-#        r = pool.starmap(write_geojson, args)
 
 def max_distance(lat_s, lon_s, coords):
     maxd = 0
@@ -112,7 +40,7 @@ def detail2np(path):
     return np.array(coords) 
 
 def walkt_tree(pool, directory, pattern, sid, hull, bbox):
-    #logging.debug(f"walk {directory}")
+
     sname = station_list[sid]["name"]
     nf = 0
     p = [str(x) for x in directory.rglob(pattern)]
@@ -122,21 +50,16 @@ def walkt_tree(pool, directory, pattern, sid, hull, bbox):
 
     points = np.concatenate(n)
     h = ConvexHull(points)
-    # for s in hull.simplices:
-    #     logging.debug(f"s: {sid} {s}")
-
-    # for v in hull.vertices:
-    #     logging.debug(f"v: {sid} {v}")
 
     c = [points[v].tolist()  for v in h.vertices]
+
     sim = Simplify2D()
     highestQuality = True
     tolerance = 0.01
-
-    coords = (sim.simplify(c,
-                           tolerance=tolerance,
-                           highestQuality=highestQuality,
-                           returnMarkers=False))
+    coords = sim.simplify(c,
+                          tolerance=tolerance,
+                          highestQuality=highestQuality,
+                          returnMarkers=False)
     
     f = geojson.Polygon([coords])
     f.properties = {
