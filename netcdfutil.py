@@ -17,6 +17,9 @@ import thermodynamics as td
 
 import customtypes
 
+import warnings
+
+warnings.filterwarnings('error')
 
 def height2time(h0, height):
     hdiff = height - h0
@@ -168,26 +171,30 @@ def process_netcdf(data,
         wdSigW = nc.variables["wdSigW"][i].filled(fill_value=np.nan)
   
         # sig wind levels p gph u v
-        for j in range(sigWLevel):
-            if isnan(htSigW[j]) or isnan(wsSigW[j]) or isnan(wdSigW[j]):
-                continue
+        try:
+            for j in range(sigWLevel):
+                if isnan(htSigW[j]) or isnan(wsSigW[j]) or isnan(wdSigW[j]):
+                    continue
 
-            # add height, derive pressure
-            h = u.geopotential_height_to_height(htSigW[j])
-            p = td.barometric_equation(p0, t0, h - h0)
-            wu, wv = u.wind_to_UV(wsSigW[j], wdSigW[j])
+                # add height, derive pressure
+                h = u.geopotential_height_to_height(htSigW[j])
+                p = td.barometric_equation(p0, t0, h - h0)
+                wu, wv = u.wind_to_UV(wsSigW[j], wdSigW[j])
 
-            sample = customtypes.DictNoNone()
-            sample.update({
-                "pressure": u._round(p, 2),
-                "gpheight": u._round(htSigW[j], 1),
-                "height": u._round(h, 1),
-                "wind_u": u._round(wu, 2),
-                "wind_v": u._round(wv, 2),
-            })
-            if tagSamples:
-                sample["tag"] = "sig_wind"
-            temp.append(sample)
+                sample = customtypes.DictNoNone()
+                sample.update({
+                    "pressure": u._round(p, 2),
+                    "gpheight": u._round(htSigW[j], 1),
+                    "height": u._round(h, 1),
+                    "wind_u": u._round(wu, 2),
+                    "wind_v": u._round(wv, 2),
+                })
+                if tagSamples:
+                    sample["tag"] = "sig_wind"
+                temp.append(sample)
+        except RuntimeWarning as e:
+            logging.exception(f"Exception: station {stn} {filename=} : {e}")
+            continue
 
         # maximum wind levels
         prMaxW = nc.variables["prMaxW"][i].filled(fill_value=np.nan)

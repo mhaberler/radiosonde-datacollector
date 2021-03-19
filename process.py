@@ -293,8 +293,8 @@ def process_as(
             syn_time = fc.properties["syn_timestamp"]
             detail = util.detail_path(destdir, repfmt, station_id, syn_time) + ".br"
             if pathlib.Path(detail).exists():
-                logging.debug(f"skipping dup: {filename}/{station_id} via {channel}")
-                continue
+                logging.debug(f"detected dup: {filename}/{station_id} via {channel}")
+                # continue
 
             updated_stations.append((station_id, fc.properties))
             args.append((detail, fc))
