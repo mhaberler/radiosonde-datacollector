@@ -257,8 +257,8 @@ def process_as(
         detail = util.detail_path(destdir, repfmt, station_id, syn_time) + ".br"
 
         if pathlib.Path(detail).exists():
-            logging.debug(f"skipping dup: {filename}/{station_id} via {channel}")
-            return True
+            logging.debug(f"found dup: {filename}/{station_id} via {channel}")
+            #return True
 
         logging.debug(
             f"output samples retained: {len(fc.features)}," f" station id={station_id}"
