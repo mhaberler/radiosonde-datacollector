@@ -1,13 +1,11 @@
 import argparse
+import logging
 import pathlib
-import brotli
 import geojson
 import time, sys, os
 
-import pandas as pd
 from vincenty import vincenty
 from pprint import pprint
-import geopandas
 
 import config
 
@@ -82,7 +80,7 @@ def walkt_tree(directory, pattern):
     nu = 0
     for path in sorted(directory.rglob(pattern)):
         #print(path, file=sys.stderr)
-        gj = util.read_json_file(path, useBrotli=True, asGeojson=True):
+        gj = util.read_json_file(path, useBrotli=True, asGeojson=True)
         nf += 1
         r = extent(gj)
         if r:
@@ -124,4 +122,4 @@ def  main():
 
 
 if __name__ == "__main__":
-    sys.exit(main(dirlist))
+    sys.exit(main())
