@@ -3,11 +3,14 @@ import logging
 import pathlib
 import geojson
 import time, sys, os
-
+from multiprocessing import Pool, cpu_count
+from multiprocessing_logging import install_mp_handler
 from vincenty import vincenty
 from pprint import pprint
 
 import config
+
+import pidfile
 
 import util
 
@@ -35,7 +38,7 @@ def dump_bboxes(points, filename):
                             })
         fc.features.append(f)
 
-    write_json_file(fc, filename, useBrotli=True, asGeojson=True)
+    util.write_json_file(fc, filename, useBrotli=True, asGeojson=True)
 
 
 def bounding_box_naive(points):
@@ -74,10 +77,11 @@ def extent(gj):
     return gj.properties['station_id'], d
 
 flights = []
-def walkt_tree(directory, pattern):
+
+#        r = pool.starmap(write_geojson, args)
+
+def walkt_tree(pool, directory, pattern):
     nf = 0
-    nc = 0
-    nu = 0
     for path in sorted(directory.rglob(pattern)):
         #print(path, file=sys.stderr)
         gj = util.read_json_file(path, useBrotli=True, asGeojson=True)
@@ -113,13 +117,25 @@ def  main():
         level = logging.DEBUG
 
     logging.basicConfig(level=level)
+    install_mp_handler()
     os.umask(0o22)
+    
+    with pidfile.Pidfile(
+            config.LOCKFILE + pathlib.Path(args.destdir).name + ".pid",
+            log=logging.debug,
+            warn=logging.debug,
+    ) as pf, Pool(cpu_count()) as pool:
+        try:
+            nf = walkt_tree(pool, pathlib.Path(args.fm94),'*.geojson.br')
+            
+            dump_bboxes(points, args.bbox)
+            logging.debug(f"{nf} flights")
+            
+        except pidfile.ProcessRunningException:
+            logging.error(f"the pid file {config.LOCKFILE} is in use, exiting.")
+            return -1
 
-    nf = walkt_tree(pathlib.Path(args.fm94),'*.geojson.br')
-    dump_bboxes(points, args.bbox)
-
-    logging.debug(f"{nf} flights")
-
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())
