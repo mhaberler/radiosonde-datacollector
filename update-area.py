@@ -9,6 +9,7 @@ from vincenty import vincenty
 from pprint import pprint
 import numpy as np
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
+from simplify import Simplify2D
 
 import config
 
@@ -109,7 +110,16 @@ def walkt_tree(pool, directory, pattern, sid, sname, fc):
     #     logging.debug(f"v: {sid} {v}")
 
     coords = [points[v].tolist()  for v in hull.vertices]
-    f = geojson.Polygon([coords])
+    sim = Simplify2D()
+    highestQuality = False
+    tolerance = 0.01
+
+    simplified_coords = (sim.simplify(coords, tolerance=tolerance,
+                                      highestQuality=highestQuality,
+                                      returnMarkers=False))
+
+    f = geojson.Polygon([simplified_coords])
+#    f = geojson.Polygon([coords])
     f.properties = {
         'station_id': sid,
         'name': sname
@@ -141,7 +151,7 @@ def  main():
     parser.add_argument(
         "--datadir",
         action="store",
-        default=config.DATA_DIR,
+        default=config.WWW_DIR + config.DATA_DIR,
         help="path to data dir",
     )
     parser.add_argument(
