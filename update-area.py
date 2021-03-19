@@ -161,7 +161,7 @@ def walkt_tree(pool, directory, pattern, sid, hull, bbox):
                         })
     bbox.features.append(f)
     
-    sLON = station_list[sid]["lat"]
+    slat = station_list[sid]["lat"]
     slon = station_list[sid]["lon"]
     mlat, mlon, md = max_distance(slat, slon, coords)
 
