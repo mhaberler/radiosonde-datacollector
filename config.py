@@ -20,6 +20,8 @@ STATIC_DIR = "static/"
 STATION_TXT = "station_list.txt"
 SUMMARY = "summary.geojson.br"
 FM94_AREA = "area-fm94.geojson.br"
+FM94_BBOX = "bbox-fm94.geojson.br"
+FM94_MAXDIST = "maxdist-fm94.geojson.br"
 
 PROCESSED = r"processed"
 FAILED = r"failed"

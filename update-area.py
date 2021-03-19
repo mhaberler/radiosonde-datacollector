@@ -86,6 +86,20 @@ flights = []
 
 #        r = pool.starmap(write_geojson, args)
 
+def max_distance(lat_s, lon_s, coords):
+    maxd = 0
+    max_lat = None
+    max_lon = None
+    
+    for lon, lat in coords:
+        d = vincenty((lat_s, lon_s), (lat, lon), miles=False)
+        if d and d > maxd:
+            maxd = d
+            max_lat = lat
+            max_lon = lon
+    return max_lat, max_lon, maxd
+
+
 def detail2np(path):
     gj = util.read_json_file(path, useBrotli=True, asGeojson=True)
     if gj.properties['id_type'] != "wmo":
@@ -93,8 +107,9 @@ def detail2np(path):
     coords = [x.geometry.coordinates[0:2] for x in gj.features]
     return np.array(coords) 
 
-def walkt_tree(pool, directory, pattern, sid, sname, fc):
+def walkt_tree(pool, directory, pattern, sid, hull, bbox):
     #logging.debug(f"walk {directory}")
+    sname = station_list[sid]["name"]
     nf = 0
     p = [str(x) for x in directory.rglob(pattern)]
 
@@ -102,29 +117,57 @@ def walkt_tree(pool, directory, pattern, sid, sname, fc):
     n = [x for x in r if x.any()]
 
     points = np.concatenate(n)
-    hull = ConvexHull(points)
+    h = ConvexHull(points)
     # for s in hull.simplices:
     #     logging.debug(f"s: {sid} {s}")
 
     # for v in hull.vertices:
     #     logging.debug(f"v: {sid} {v}")
 
-    coords = [points[v].tolist()  for v in hull.vertices]
+    c = [points[v].tolist()  for v in h.vertices]
     sim = Simplify2D()
-    highestQuality = False
+    highestQuality = True
     tolerance = 0.01
 
-    simplified_coords = (sim.simplify(coords, tolerance=tolerance,
-                                      highestQuality=highestQuality,
-                                      returnMarkers=False))
-
-    f = geojson.Polygon([simplified_coords])
-#    f = geojson.Polygon([coords])
+    coords = (sim.simplify(c,
+                           tolerance=tolerance,
+                           highestQuality=highestQuality,
+                           returnMarkers=False))
+    
+    f = geojson.Polygon([coords])
     f.properties = {
         'station_id': sid,
         'name': sname
     }
-    fc.features.append(f)
+    hull.features.append(f)
+
+    lbot,rtop = bounding_box_naive(coords)
+    llon, llat = lbot
+    rlon, rlat = rtop
+    f = geojson.Feature(geometry=geojson.MultiLineString([[(llat,llon),
+                                                           (rlat,llon),
+                                                           (rlat,rlon),
+                                                           (llat,rlon),
+                                                           (llat,llon)]]),
+                        properties= {
+                            'station_id': sid,
+                            'name': sname
+                        })
+    bbox.features.append(f)
+    
+    slat = station_list[sid]["lat"]
+    slon = station_list[sid]["lon"]
+    mlat, mlon, md = max_distance(slat, slon, coords)
+
+    f = geojson.Feature(
+        geometry=geojson.Point((round(mlon, 6), round(mlat, 6))),
+        properties= {
+            'station_id': sid,
+            'name': sname,
+            'distance': md
+        })
+    bbox.features.append(f)
+    
     return len(p)
 
 def station_dir(repfmt, station_id, prefix=None):
@@ -146,6 +189,12 @@ def  main():
         "--area",
         action="store",
         default=config.WWW_DIR + config.DATA_DIR + config.FM94_AREA,
+        help="path of brotli-compressed area-fm94.geojson.br",
+    )
+    parser.add_argument(
+        "--bbox",
+        action="store",
+        default=config.WWW_DIR + config.DATA_DIR + config.FM94_BBOX,
         help="path of brotli-compressed area-fm94.geojson.br",
     )
     parser.add_argument(
@@ -176,7 +225,8 @@ def  main():
             warn=logging.debug,
     ) as pf, Pool(cpu_count()) as pool:
         try:
-            fc = geojson.FeatureCollection([])
+            hull = geojson.FeatureCollection([])
+            bbox = geojson.FeatureCollection([])
 
             global station_list
             station_list = util.read_json_file(args.station_json,
@@ -188,13 +238,16 @@ def  main():
 
                 if os.path.exists(sdir):
                     name = station_list[st]["name"]
-                    nf = walkt_tree(pool, pathlib.Path(sdir),'*.geojson.br', st, name, fc)
-            util.write_json_file(fc,
+                    nf = walkt_tree(pool, pathlib.Path(sdir),'*.geojson.br', st, hull, bbox)
+            util.write_json_file(hull,
                                  args.area,
                                  useBrotli=args.area.endswith(".br"),
                                  asGeojson=True)
+            util.write_json_file(bbox,
+                                 args.bbox,
+                                 useBrotli=args.area.endswith(".br"),
+                                 asGeojson=True)
 
-            #dump_bboxes(points, args.bbox)
             #logging.warning(f"{nf} flights")
             
         except pidfile.ProcessRunningException:
