@@ -11,6 +11,8 @@ from geojson import Feature, Point
 import re
 from operator import itemgetter
 import reverse_geocoder as rg
+from multiprocessing import Pool, cpu_count, Queue
+from multiprocessing_logging import install_mp_handler
 
 import pidfile
 
@@ -22,6 +24,38 @@ flights = {}
 missing = {}
 txtfrag = []
 
+# r = {'station_id': '03559', 'sonde_type': 141, 'sonde_frequency': 404500000.0, 'sonde_serial': 'S1830629'}
+def update(r):
+    k = r['station_id']
+    if k not in flights:
+        return
+
+    f = flights[k]
+    for p in [x for x in ["sonde_type","sonde_frequency", "sonde_serial" ] if x in r]:
+        if p not in f.properties:
+            f.properties.update({p: [r[p]]})
+        else:
+            if r[p] not in f.properties[p]:
+                f.properties[p].append(r[p])
+
+
+query = [ "station_id","sonde_type","sonde_frequency", "sonde_serial" ]
+
+def get_detail(path):
+    gj = util.read_json_file(path, useBrotli=True, asGeojson=True)
+    if 'sonde_serial' in gj.properties:
+        return { x: gj.properties[x] for x in query if x in gj.properties}
+    return None
+
+
+def add_station_detail(toplevel, directory, pattern):
+    p = [str(x) for x in directory.rglob(pattern)]
+
+    with Pool(cpu_count()) as pool:
+        r = pool.map(get_detail, p)
+        for x in r:
+            if x:
+                update(x)
 
 def walkt_tree(toplevel, directory, pattern, after):
     nf = 0
@@ -199,6 +233,10 @@ def main():
                 ntotal = ntotal + nf
 
             fixup_flights(flights)
+
+            for d in args.dirs:
+                add_station_detail(d, pathlib.Path(d), "*.geojson.br")
+
             fc = geojson.FeatureCollection([])
             fc.properties = {
                 "fmt": config.FORMAT_VERSION,
