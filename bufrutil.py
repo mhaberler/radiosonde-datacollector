@@ -40,7 +40,7 @@ class BufrUnreadableError(Exception):
 
 
 def bufr_decode(f, filename):
-    
+
     ibufr = codes_bufr_new_from_file(f)
     if not ibufr:
         raise BufrUnreadableError("empty file", fn, archive)
@@ -147,7 +147,7 @@ def bufr_decode(f, filename):
         timePeriod = codes_get(ibufr, f"#{i}#{k}")
         if timePeriod == CODES_MISSING_LONG:
             continue
-   
+
         sample[k] = timePeriod
         replaceable = ["latitudeDisplacement", "longitudeDisplacement"]
         sampleOK = True
@@ -161,7 +161,7 @@ def bufr_decode(f, filename):
                     sampleOK = False
                     missingValues += 1
                     break
-                             
+
             except Exception as e:
                 sampleOK = False
                 logging.debug(f"sample={i} key={k} e={e}, skipping")
@@ -263,7 +263,7 @@ def convert_bufr_to_geojson(h,
         # take height of first sample
         gph = samples[0]["nonCoordinateGeopotentialHeight"]
         ele = round(util.geopotential_height_to_height(gph), 2)
-  
+
     properties = customtypes.DictNoNone()
     util.set_metadata(
         properties,
@@ -345,6 +345,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
     parser.add_argument("-j", "--json", action="store_true", default=False)
+    parser.add_argument("-H", "--hstep", type=float, default=config.HSTEP)
     parser.add_argument("-g", "--geojson", action="store_true", default=False)
     parser.add_argument(
         "--station-json",
@@ -354,6 +355,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("files", nargs="*")
     args = parser.parse_args()
+    config.HSTEP = args.hstep
 
     level = logging.WARNING
     if args.verbose:
@@ -369,7 +371,7 @@ if __name__ == "__main__":
 
             if args.json:
                 print(json.dumps(result, indent=4, cls=util.NumpyEncoder))
-            
+
             if args.geojson:
                 arrived = int(util.age(filename))
                 gj = convert_bufr_to_geojson(result, arrived=arrived)
