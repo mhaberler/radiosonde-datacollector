@@ -1,26 +1,25 @@
 #!/bin/bash
-REMOTE_HOST="madis-data.ncep.noaa.gov"
-REMOTE_DIR=point/raob/netcdf/
-LOCAL_DIR=var/spool/madis/incoming
-USER=anonymous
-MAILDEST=root
-PASS=user@yourserver.com
+
+#set -x
+
+# WEB=/var/www/radiosonde.mah.priv.at
+# DATA=$WEB/data
+# SUMMARY=$DATA/summary.geojson.br
+# SUMMARY_365=$DATA/summary.year.geojson.br
+# STATION_LIST=$WEB/static/station_list.json
+# REPO=/home/sondehub/radiosonde-datacollector-dev
 
 
-(
-  flock -n 9 || exit 1
+. /home/sondehub/miniconda3/etc/profile.d/conda.sh
 
-  TMP=$(mktemp)
-  var=$(lftp -u $USER,$PASS -e "mirror --parallel=2 --verbose /$REMOTE_DIR /$LOCAL_DIR; bye" $REMOTE_HOST 2> "$TMP")
-  err=$(cat "$TMP")
+conda activate sondehub-3.8
 
+cd $REPO
 
-  if test -z "$err"
-  then
-    echo madis update processed OK | logger -t processmail
-  else
-    echo "stderr=$err stdout=$var" | mail -s 'madis update failed' $MAILDEST
-  fi
-  rm -f "$TMP"
+python madis-mirror.py  "$@"
 
-) 9>/var/lock/update-madis.sh
+if [[ $? -ne 0 ]]; then
+
+    echo update-madis FAILED
+    exit 1
+fi
