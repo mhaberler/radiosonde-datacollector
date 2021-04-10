@@ -180,7 +180,7 @@ def main():
         "--station-json",
         action="store",
         default=config.STATION_LIST,
-        help="path to write the station_list.json file",
+        help="path to read the station_list.json file from",
     )
     parser.add_argument(
         "--summary",
