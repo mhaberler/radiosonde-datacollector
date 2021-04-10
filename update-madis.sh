@@ -7,7 +7,7 @@
 # SUMMARY=$DATA/summary.geojson.br
 # SUMMARY_365=$DATA/summary.year.geojson.br
 # STATION_LIST=$WEB/static/station_list.json
-# REPO=/home/sondehub/radiosonde-datacollector-dev
+REPO=/home/sondehub/radiosonde-datacollector-dev
 
 
 . /home/sondehub/miniconda3/etc/profile.d/conda.sh

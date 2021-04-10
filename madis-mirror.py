@@ -17,7 +17,7 @@ REMOTE_DIR = "point/raob/netcdf/"
 LOCAL_DIR = "var/spool/madis/incoming"
 USER = "anonymous"
 PASS = "mah@mah.priv.at"
-LFTP = "/usr/local/bin/lftp"
+LFTP = "/usr/bin/lftp"
 
 
 def process(args):
