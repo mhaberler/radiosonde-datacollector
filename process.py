@@ -313,104 +313,115 @@ def process_files(args, wdict, updated_stations):
         for chan, flist in wdict.items():
             # chan = "gisc-offenbach" ..
 
-            for filename in flist:
-                if not args.ignore_timestamps and not util.newer(
-                    filename, config.TS_PROCESSED
-                ):
-                    logging.debug(f"skipping: {filename}  (processed)")
-                    continue
+            # protect against feeder running
+            lockfile = config.channels[chan]["feedlock"]
+            try:
+                with pidfile.Pidfile(lockfile,
+                                     log=logging.debug,
+                                     warn=logging.debug):
+                    logging.debug(f"acquired {lockfile}")
 
-                arrived = int(util.age(filename))
+                    for filename in flist:
+                        if not args.ignore_timestamps and not util.newer(
+                            filename, config.TS_PROCESSED
+                        ):
+                            logging.debug(f"skipping: {filename}  (processed)")
+                            continue
 
-                (fn, ext) = os.path.splitext(filename)
-                # logging.debug(f"processing: {filename} fn={fn} ext={ext}")
+                        arrived = int(util.age(filename))
 
-                if ext == ".zip":
-                    logging.debug(
-                        f"processing zip archive: {filename} fn={fn} ext={ext}"
-                    )
+                        (fn, ext) = os.path.splitext(filename)
+                        # logging.debug(f"processing: {filename} fn={fn} ext={ext}")
 
-                    try:
-                        with zipfile.ZipFile(filename) as zf:
-                            zip_success = True
-                            for info in zf.infolist():
+                        if ext == ".zip":
+                            logging.debug(
+                                f"processing zip archive: {filename} fn={fn} ext={ext}"
+                            )
+
+                            try:
+                                with zipfile.ZipFile(filename) as zf:
+                                    zip_success = True
+                                    for info in zf.infolist():
+                                        try:
+                                            # https://docs.python.org/3/library/zipfile.html#zipinfo-objects
+                                            # XXX ZipInfo.date_time
+                                            data = zf.read(info.filename)
+
+                                        except KeyError:
+                                            logging.error(
+                                                f"zip file {filename}: no such member {info.filename}"
+                                            )
+                                            continue
+                                        else:
+                                            repfmt, encoding = filetype(data, magique)
+                                            if repfmt not in ["fm35", "fm94"]:
+                                                logging.debug(
+                                                    f"skipping member: {info.filename} repfmt={repfmt} encoding={encoding}"
+                                                )
+                                                continue
+
+                                            success = process_as(
+                                                args,
+                                                chan,
+                                                repfmt,
+                                                encoding,
+                                                data,
+                                                info.filename,
+                                                pathlib.Path(filename).name,
+                                                args.destdir,
+                                                arrived,
+                                                updated_stations,
+                                            )
+
+                                            zip_success = zip_success and success
+
+                                    if not args.ignore_timestamps:
+                                        gen_timestamp(fn, zip_success)
+
+                            except zipfile.BadZipFile as e:
+                                logging.error(f"{filename}: {e}")
+                                if not args.ignore_timestamps:
+                                    gen_timestamp(fn, False)
+
+                        else:
+                            # plain files
+                            if ext.endswith("gz"):
+                                open_method = gzip.open
+                            else:
+                                open_method = open
+
+                            with open_method(filename, "rb") as fd:
+
                                 try:
-                                    # https://docs.python.org/3/library/zipfile.html#zipinfo-objects
-                                    # XXX ZipInfo.date_time
-                                    data = zf.read(info.filename)
-
-                                except KeyError:
-                                    logging.error(
-                                        f"zip file {filename}: no such member {info.filename}"
-                                    )
-                                    continue
-                                else:
+                                    data = fd.read()
                                     repfmt, encoding = filetype(data, magique)
-                                    if repfmt not in ["fm35", "fm94"]:
-                                        logging.debug(
-                                            f"skipping member: {info.filename} repfmt={repfmt} encoding={encoding}"
-                                        )
-                                        continue
-
                                     success = process_as(
                                         args,
                                         chan,
                                         repfmt,
                                         encoding,
                                         data,
-                                        info.filename,
                                         pathlib.Path(filename).name,
+                                        None,
                                         args.destdir,
                                         arrived,
                                         updated_stations,
                                     )
 
-                                    zip_success = zip_success and success
+                                except gzip.BadGzipFile as e:
+                                    logging.error(f"{filename}: {e}")
+                                    if not args.ignore_timestamps:
+                                        gen_timestamp(fn, False)
 
-                            if not args.ignore_timestamps:
-                                gen_timestamp(fn, zip_success)
+                                except OSError as e:
+                                    logging.error(f"{filename}: {e}")
 
-                    except zipfile.BadZipFile as e:
-                        logging.error(f"{filename}: {e}")
-                        if not args.ignore_timestamps:
-                            gen_timestamp(fn, False)
+                                else:
+                                    if not args.ignore_timestamps:
+                                        gen_timestamp(fn, success)
 
-                else:
-                    # plain files
-                    if ext.endswith("gz"):
-                        open_method = gzip.open
-                    else:
-                        open_method = open
-
-                    with open_method(filename, "rb") as fd:
-
-                        try:
-                            data = fd.read()
-                            repfmt, encoding = filetype(data, magique)
-                            success = process_as(
-                                args,
-                                chan,
-                                repfmt,
-                                encoding,
-                                data,
-                                pathlib.Path(filename).name,
-                                None,
-                                args.destdir,
-                                arrived,
-                                updated_stations,
-                            )
-
-                        except gzip.BadGzipFile as e:
-                            logging.error(f"{filename}: {e}")
-                            if not args.ignore_timestamps:
-                                gen_timestamp(fn, False)
-
-                        except OSError as e:
-                            logging.error(f"{filename}: {e}")
-
-                        else:
-                            if not args.ignore_timestamps:
-                                gen_timestamp(fn, success)
+            except pidfile.ProcessRunningException:
+                logging.debug(f"channel {chan} locked with {lockfile}, skipping")
 
 
 def gen_timestamp(fn, success):
