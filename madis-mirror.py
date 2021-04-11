@@ -18,11 +18,13 @@ LOCAL_DIR = "var/spool/madis/incoming"
 USER = "anonymous"
 PASS = "mah@mah.priv.at"
 LFTP = "/usr/bin/lftp"
-
+simtime = 3
 
 def process(args):
 
-    cmdline = f"{LFTP} -d -u {USER},{PASS} -e 'mirror --parallel=4 --verbose /{REMOTE_DIR} /{LOCAL_DIR}; bye' {REMOTE_HOST}"
+    cmdline = (f"{LFTP} -d -u {USER},{PASS} -e 'mirror --parallel=4 --verbose"
+               f"/{REMOTE_DIR} /{LOCAL_DIR}; bye' {REMOTE_HOST}")
+
     command = shlex.split(cmdline)
     logging.debug(f"command: {command}")
 
@@ -41,24 +43,33 @@ def process(args):
 
 
 def main():
+
+    chan = config.channels["noaa-madis"]
+    lockfile = chan["feedlock"]
+
     parser = argparse.ArgumentParser(
         description="mirror MADIS ftp directory under lock", add_help=True
     )
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
-    parser.add_argument("--destdir", action="store", default=".")
+    parser.add_argument("-s", "--simulate", action="store_true", default=False,
+                       help="do not actually run mirrorftp, just test locking")
+    parser.add_argument("-l", "--lockfile", action="store",
+                        default=lockfile,
+                        help=f"lockfile to use, default {lockfile}",
+                        )
     parser.add_argument(
-        "--max-wait",
+        "-w", "--max-wait",
         action="store",
         type=float,
         default=180,
-        help="number of seconds to wait for pidfile before giving up",
+        help="number of seconds to wait for lockfile before giving up",
     )
     parser.add_argument(
-        "--interval",
+        "-i", "--interval",
         action="store",
         type=float,
         default=5,
-        help="check every interval seconds",
+        help="check lockfile every interval seconds",
     )
 
     parser.add_argument("files", nargs="*")
@@ -69,11 +80,7 @@ def main():
 
     logging.basicConfig(level=level)
 
-    lockfile =  config.LOCKFILE + pathlib.Path(args.destdir).name + ".pid"
-
-    done = False
     remaining = args.max_wait
-
     retcode = -1
 
     while True:
@@ -82,7 +89,12 @@ def main():
                                  log=logging.debug,
                                  warn=logging.debug):
                 logging.debug(f"acquired {lockfile}")
-                retcode = process(args)
+                if args.simulate:
+                    logging.debug(f"simulate work by sleeping {simtime}s")
+                    time.sleep(simtime)
+                    retcode = 0
+                else:
+                    retcode = process(args)
                 break
 
         except pidfile.ProcessRunningException:
