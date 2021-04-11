@@ -30,6 +30,7 @@ TS_PROCESSED = ".processed"
 TS_FAILED = ".failed"
 TS_TIMESTAMP = ".timestamp"
 LOCKFILE = "/var/lock/process-radiosonde."
+FEED_LOCKFILE = "feedlock.pid"
 STATION_LIST = WWW_DIR + STATIC_DIR + "station_list.json"
 FM35_DATA = WWW_DIR + DATA_DIR + "fm35/"
 FM94_DATA = WWW_DIR + DATA_DIR + "fm94/"
@@ -75,6 +76,7 @@ channels = {
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "keeptime": 0,
         "retain" : 14, # days
+        "feedlock": SPOOLDIR_GISC_OFFENBACH + FEED_LOCKFILE,
     },
     # "gisc-moscow": {
     #     "name":  "GISC Moscow",
@@ -88,6 +90,7 @@ channels = {
         "keeptime": 0,
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "retain" : 14, # days
+        "feedlock": SPOOLDIR_METEO_FR + FEED_LOCKFILE,
 
         # "stations": [
         #     # 0,12
@@ -102,7 +105,7 @@ channels = {
         #     "91925",  # Hiva-Oa
         #     "91938",  # Faa'a
         #     "91592",  # Nouméa
-            
+
         #     "89642",  # Dumont D'Urville - 0h
         #     "78897",  # Le Raizet 12h
         #     "91958",  # Rapa 18h
@@ -114,6 +117,7 @@ channels = {
         "keeptime": 0,
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "retain" : 14, # days
+        "feedlock": SPOOLDIR_GISC_TOKYO + FEED_LOCKFILE,
     },
     "noaa-madis": {
         "name": "NOAA MADIS",
@@ -121,5 +125,6 @@ channels = {
         "keeptime": -1,
         "pattern": ".*\\.gz$",
         "retain" : 14, # days
+        "feedlock": SPOOLDIR_NOAA_MADIS + FEED_LOCKFILE,
     },
 }
