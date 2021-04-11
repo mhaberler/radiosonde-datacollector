@@ -14,7 +14,6 @@ import config
 
 REMOTE_HOST = "madis-data.ncep.noaa.gov"
 REMOTE_DIR = "point/raob/netcdf/"
-LOCAL_DIR = "var/spool/madis/incoming"
 USER = "anonymous"
 PASS = "mah@mah.priv.at"
 LFTP = "/usr/bin/lftp"
@@ -23,7 +22,7 @@ simtime = 3
 def process(args):
 
     cmdline = (f"{LFTP} -d -u {USER},{PASS} -e 'mirror --parallel=4 --verbose "
-               f"/{REMOTE_DIR} /{LOCAL_DIR}; bye' {REMOTE_HOST}")
+               f"/{REMOTE_DIR} /{config.SPOOLDIR_NOAA_MADIS}; bye' {REMOTE_HOST}")
 
     command = shlex.split(cmdline)
     logging.debug(f"command: {command}")
