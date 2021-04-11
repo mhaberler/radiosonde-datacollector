@@ -6,6 +6,7 @@ import sys
 import logging
 import os
 import pathlib
+import pidfile
 from numpy import random
 from time import sleep
 
@@ -30,7 +31,7 @@ def received(spool, fn):
             return True
     return False
 
-def fetch(bufr, dest, sleeptime=5, fetch=True):
+def fetch(bufr, dest, lockfile, sleeptime=5, fetch=True):
     url = f"{site}{prefix}{bufr}"
     if not fetch:
         logging.debug(f"would retrieve: {url}")
@@ -40,8 +41,17 @@ def fetch(bufr, dest, sleeptime=5, fetch=True):
         if "Last-Modified" in r.headers:
             logging.debug(f"retrieving: {url} -> {dest}/{bufr}, modified: {r.headers['Last-Modified']}")
             if fetch:
-                with open(f"{dest}/{bufr}", "wb") as f:
-                    f.write(r.content)
+                try:
+                    with pidfile.Pidfile(lockfile,
+                                         log=logging.debug,
+                                         warn=logging.debug):
+
+                        logging.debug(f"acquired {lockfile}")
+                        with open(f"{dest}/{bufr}", "wb") as f:
+                            f.write(r.content)
+
+                except pidfile.ProcessRunningException:
+                    logging.debug(f"{lockfile} locked, skipping")
         else:
             logging.debug(f"not yet available: {bufr}")
 
@@ -116,7 +126,7 @@ def main():
         type=float,
         help="max delay value",
     )
-             
+
     args = parser.parse_args()
     level = logging.WARNING
     if args.verbose:
@@ -137,13 +147,13 @@ def main():
 
     c = config.channels["meteo-fr"]
     spool = c["spooldir"]
+    lockfile = c["feedlock"]
 
     missing = get_missing(day, hour, dispos, spool)
     for r in missing:
         sleeptime = random.uniform(args.mindelay, args.maxdelay)
-        fetch(r, spool + config.INCOMING, sleeptime=sleeptime, fetch=not args.nofetch)
+        fetch(r, spool + config.INCOMING, lockfile, sleeptime=sleeptime, fetch=not args.nofetch)
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
