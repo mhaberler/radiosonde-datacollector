@@ -22,7 +22,7 @@ simtime = 3
 
 def process(args):
 
-    cmdline = (f"{LFTP} -d -u {USER},{PASS} -e 'mirror --parallel=4 --verbose"
+    cmdline = (f"{LFTP} -d -u {USER},{PASS} -e 'mirror --parallel=4 --verbose "
                f"/{REMOTE_DIR} /{LOCAL_DIR}; bye' {REMOTE_HOST}")
 
     command = shlex.split(cmdline)
