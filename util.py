@@ -13,8 +13,6 @@ import numpy as np
 
 import brotli
 
-import config
-
 import constants
 
 import geojson
@@ -45,12 +43,12 @@ class NumpyEncoder(json.JSONEncoder):
 # from https://gist.githubusercontent.com/chrisjsimpson/076a82b51e8540a117e8aa5e793d06ec/raw/b29d410f10236a7dd420d9688eef278c458a8cbf/dms2dec.py
 
 """
-Converting Degrees, Minutes, Seconds formatted coordinate strings to decimal. 
+Converting Degrees, Minutes, Seconds formatted coordinate strings to decimal.
 
 Formula:
 DEC = (DEG + (MIN * 1/60) + (SEC * 1/60 * 1/60))
 
-Assumes S/W are negative. 
+Assumes S/W are negative.
 """
 
 
@@ -111,6 +109,12 @@ _mapping = {
     "radiosondeSerialNumber": "sonde_serial",
     "radiosondeOperatingFrequency": "sonde_frequency",
     "correctionAlgorithmsForHumidityMeasurements": "sonde_humcorr",
+    "balloonManufacturer": "balloon_manufacturer",
+    "balloonType": "balloon_type",
+    "balloonShelterType": "balloon_shelter",
+    "typeOfGasUsedInBalloon": "gas_type",
+    "weightOfBalloon": "balloon_weight",
+    "amountOfGasUsedInBalloon": "gas_weight",
     "repfmt": None,  # FM-35 FM-94
     "gtsTopic": "gts_topic",
     "channel": None,  # "GISC Tokyo"

@@ -224,5 +224,30 @@
 	"13": "User Terminated",
 	"30": "Other",
 	"31": "Missing Value"
+    },
+    "balloon_manufacturer": {
+        "0": "Kaysam",
+        "1": "Totex",
+        "2": "KKS"
+    },
+    "balloon_type": {
+        "0": "GP26",
+        "1": "GP28",
+        "2": "GP30",
+        "3": "HM26",
+        "4": "HM28",
+        "5": "HM30",
+        "6": "SV16"
+    },
+    "balloon_shelter": {
+        "0": "High bay",
+        "1": "Low bay",
+        "2": "Balloon-inflated launch system (BILS)",
+        "3": "Roof-top BILS"
+    },
+    "gas_type": {
+        "0": "Hydrogen",
+        "1": "Helium",
+        "2": "Natural gas"
     }
 }

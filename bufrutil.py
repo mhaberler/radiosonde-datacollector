@@ -43,7 +43,7 @@ def bufr_decode(f, filename):
 
     ibufr = codes_bufr_new_from_file(f)
     if not ibufr:
-        raise BufrUnreadableError("empty file", fn, archive)
+        raise BufrUnreadableError("empty file", filename)
     codes_set(ibufr, "unpack", 1)
 
     missingHdrKeys = 0
@@ -82,6 +82,10 @@ def bufr_decode(f, filename):
         "trackingTechniqueOrStatusOfSystem",
         "measuringEquipmentType",
         "reasonForTermination",
+        "balloonManufacturer",
+        "balloonType",
+        "balloonShelterType",
+        "typeOfGasUsedInBalloon",
     ]
     fvals = [
         "radiosondeOperatingFrequency",
@@ -89,6 +93,8 @@ def bufr_decode(f, filename):
         "longitude",
         "heightOfStationGroundAboveMeanSeaLevel",
         "heightOfBarometerAboveMeanSeaLevel",
+        "weightOfBalloon",
+        "amountOfGasUsedInBalloon",
     ]
     svals = [
         "radiosondeSerialNumber",
@@ -137,8 +143,6 @@ def bufr_decode(f, filename):
     samples = []
     invalidSamples = 0
     missingValues = 0
-    fakeTimeperiod = 0
-    fixups = []  # report once only
 
     for i in range(1, num_samples + 1):
         sample = {}
@@ -149,7 +153,6 @@ def bufr_decode(f, filename):
             continue
 
         sample[k] = timePeriod
-        replaceable = ["latitudeDisplacement", "longitudeDisplacement"]
         sampleOK = True
         for k in fkeys:
             name = f"#{i}#{k}"
@@ -229,12 +232,9 @@ def gen_id(h):
     return ("location", f"{h['latitude']:.3f}:{h['longitude']:.3f}")
 
 
-def convert_bufr_to_geojson(h,
-                            filename=None,
-                            archive=None,
-                            gtsTopic=None,
-                            arrived=None,
-                            channel=None):
+def convert_bufr_to_geojson(
+    h, filename=None, archive=None, gtsTopic=None, arrived=None, channel=None
+):
     takeoff = datetime(
         year=h["year"],
         month=h["month"],
@@ -283,7 +283,6 @@ def convert_bufr_to_geojson(h,
         channel=channel,
         gtsTopic=gtsTopic,
         fmt=config.FORMAT_VERSION,
-
     )
 
     util.set_metadata_from_dict(properties, h)
@@ -350,7 +349,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--station-json",
         action="store",
-        default='station_list.json',
+        default="station_list.json",
         help="path to known list of stations (JSON)",
     )
     parser.add_argument("files", nargs="*")
