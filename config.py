@@ -78,12 +78,13 @@ channels = {
         "retain" : 14, # days
         "feedlock": SPOOLDIR_GISC_OFFENBACH + FEED_LOCKFILE,
     },
-    # "gisc-moscow": {
-    #     "name":  "GISC Moscow",
-    #     "spooldir": SPOOLDIR_GISC_MOSCOW,
-    #     "keeptime": 0,
-    #     "pattern":  ".*\\.(zip|bufr|bfr|bin)$",
-    # },
+    "gisc-moscow": {
+        "name":  "GISC Moscow",
+        "spooldir": SPOOLDIR_GISC_MOSCOW,
+        "keeptime": 0,
+        "retain" : 14, # days
+        "pattern": ".*\\.(zip|bufr|bfr|bin|b)$",
+    },
     "meteo-fr": {
         "name": "Meteo France",
         "spooldir": SPOOLDIR_METEO_FR,
