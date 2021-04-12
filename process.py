@@ -325,7 +325,7 @@ def process_files(args, wdict, updated_stations):
                         if not args.ignore_timestamps and not util.newer(
                             filename, config.TS_PROCESSED
                         ):
-                            logging.debug(f"skipping: {filename}  (processed)")
+                            #logging.debug(f"skipping: {filename}  (processed)")
                             continue
 
                         arrived = int(util.age(filename))
