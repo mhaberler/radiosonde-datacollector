@@ -84,6 +84,8 @@ channels = {
         "keeptime": 0,
         "retain" : 14, # days
         "pattern": ".*\\.(zip|bufr|bfr|bin|b)$",
+        "feedlock": SPOOLDIR_GISC_MOSCOW + FEED_LOCKFILE,
+
     },
     "meteo-fr": {
         "name": "Meteo France",
