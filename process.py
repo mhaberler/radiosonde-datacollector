@@ -651,7 +651,8 @@ def main():
     if args.verbose:
         level = logging.DEBUG
 
-    logging.basicConfig(level=level)
+    logging.basicConfig(level=level,
+                        format='%(levelname)-8s:%(filename)s:%(funcName)s:%(lineno)d  %(message)s')
     install_mp_handler()
     os.umask(0o22)
 
