@@ -652,7 +652,7 @@ def main():
         level = logging.DEBUG
 
     logging.basicConfig(level=level,
-                        format='%(levelname)-3s:%(module)s:%(funcName)s:%(lineno)d  %(message)s')
+                        format='%(levelname)-3.3s:%(module)s:%(funcName)s:%(lineno)d  %(message)s')
     install_mp_handler()
     os.umask(0o22)
 
