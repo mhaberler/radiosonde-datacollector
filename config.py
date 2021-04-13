@@ -83,7 +83,7 @@ channels = {
         "spooldir": SPOOLDIR_GISC_MOSCOW,
         "keeptime": 0,
         "retain" : 14, # days
-        "pattern": ".*\\.(zip|bufr|bfr|bin|b)$",
+        "pattern": ".*\\.(zip|bufr|bfr|bin|b|txt)$",
         "feedlock": SPOOLDIR_GISC_MOSCOW + FEED_LOCKFILE,
 
     },
