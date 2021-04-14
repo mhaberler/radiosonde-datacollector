@@ -51,10 +51,6 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
     parser.add_argument("-s", "--simulate", action="store_true", default=False,
                        help="do not actually run mirrorftp, just test locking")
-    # parser.add_argument("-l", "--lockfile", action="store",
-    #                     default=lockfile,
-    #                     help=f"lockfile to use, default {lockfile}",
-    #                     )
     parser.add_argument(
         "-w", "--max-wait",
         action="store",
@@ -87,8 +83,12 @@ def main():
 
     remaining = args.max_wait
     retcode = -1
+    if args.channels:
+        channels = args.channels
+    else:
+        channels = [k for k in config.channels.keys() if config.channels[k].get("ftp-host", None)]
 
-    for c in args.channels:
+    for c in channels:
         if  c not in config.channels:
             logging.error(f"no such channel: {c}")
             continue
