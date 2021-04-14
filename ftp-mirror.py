@@ -1,3 +1,12 @@
+
+
+# working mirror commands:
+#
+# lftp -d -u anonymous,mah@mah.priv.at -e 'mirror --parallel=4 --verbose  --include-glob=*.bin /SL.us008001/DF.bf/DC.intl/ /var/spool/noaa-gts/staging; bye' tgftp.nws.noaa.gov
+#
+# lftp -d -u anonymous,mah@mah.priv.at -e   'mirror --parallel=4 --verbose  --include-glob=*.gz /point/raob/netcdf/ /var/spool/noaa-madis/incoming; bye' madis-data.ncep.noaa.gov
+
+
 import argparse
 import logging
 import os
