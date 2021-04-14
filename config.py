@@ -26,6 +26,7 @@ FM94_MAXDIST = "maxdist-fm94.geojson.br"
 PROCESSED = r"processed"
 FAILED = r"failed"
 INCOMING = r"incoming"
+STAGING = r"staging"
 TS_PROCESSED = ".processed"
 TS_FAILED = ".failed"
 TS_TIMESTAMP = ".timestamp"
@@ -83,9 +84,10 @@ channels = {
 
         "ftp-host": "tgftp.nws.noaa.gov",
         "remote-dir": "SL.us008001/DF.bf/DC.intl/",
-        "local-dir": SPOOLDIR_NOAA_GTS + INCOMING,
+        "local-dir": SPOOLDIR_NOAA_GTS + STAGING,
         "ftp-user": "anonymous",
-        "ftp-pass": "mah@mah.priv.at"
+        "ftp-pass": "mah@mah.priv.at",
+        "ftp-glob": "*.bin"
     },
     "gisc-offenbach": {
         "name": "GISC Offenbach",
@@ -150,6 +152,7 @@ channels = {
         "remote-dir": "point/raob/netcdf/",
         "local-dir": SPOOLDIR_NOAA_MADIS + INCOMING,
         "ftp-user": "anonymous",
-        "ftp-pass": "mah@mah.priv.at"
+        "ftp-pass": "mah@mah.priv.at",
+        "ftp-glob": "*.gz"
     },
 }

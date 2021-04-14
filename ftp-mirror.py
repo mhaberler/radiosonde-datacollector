@@ -14,7 +14,7 @@ import config
 
 simtime = 3
 
-def process(cmdline):
+def mirror(cmdline):
 
     command = shlex.split(cmdline)
     logging.debug(f"command: {command}")
@@ -60,7 +60,13 @@ def main():
         default=5,
         help="check lockfile every interval seconds",
     )
-
+    parser.add_argument(
+        "-p", "--parallel",
+        action="store",
+        type=int,
+        default=4,
+        help="number of parallel ftp sessions",
+    )
     parser.add_argument("channels", nargs="*")
     args = parser.parse_args()
     level = logging.WARNING
@@ -72,8 +78,6 @@ def main():
 
     remaining = args.max_wait
     retcode = -1
-    chan = config.channels["noaa-madis"]
-    lockfile = chan["feedlock"]
 
     for c in args.channels:
         if  c not in config.channels:
@@ -87,9 +91,15 @@ def main():
             local_dir = chan["local-dir"]
             ftp_user = chan["ftp-user"]
             ftp_pass = chan["ftp-pass"]
+            ftp_glob = chan["ftp-glob"]
+            lockfile = chan["feedlock"]
 
-            cmdline = (f"{config.LFTP} -d -u {ftp_user},{ftp_pass} -e 'mirror --parallel=4 --verbose "
-               f"/{remote_dir} {local_dir}; bye' {ftp_host}")
+            vrb = "--verbose" if args.verbose else ""
+
+            cmdline = (f"{config.LFTP} -d -u {ftp_user},{ftp_pass} "
+                       f"-e 'mirror --parallel={args.parallel} {vrb} "
+                       f" --include-glob={ftp_glob} "
+                       f"/{remote_dir} {local_dir}; bye' {ftp_host}")
 
         except KeyError:
             logging.exception(f"invalid FTP config for channel {c}: {chan}")
@@ -109,7 +119,7 @@ def main():
                         time.sleep(simtime)
                         retcode = 0
                     else:
-                        retcode = process(args)
+                        retcode = mirror(cmdline)
                     break
 
             except pidfile.ProcessRunningException:
