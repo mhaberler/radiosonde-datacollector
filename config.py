@@ -70,6 +70,8 @@ SPOOLDIR_GISC_MOSCOW = SPOOLDIR + r"gisc-moscow/"
 SPOOLDIR_METEO_FR = SPOOLDIR + r"meteo-fr/"
 SPOOLDIR_NOAA_GTS = SPOOLDIR + r"noaa-gts/"
 
+LFTP = "/usr/bin/lftp"
+
 channels = {
     "noaa-gts": {
         "name": "NOAA GTS",
@@ -78,6 +80,12 @@ channels = {
         "keeptime": 0,
         "retain" : 14, # days
         "feedlock": SPOOLDIR_NOAA_GTS + FEED_LOCKFILE,
+
+        "ftp-host": "tgftp.nws.noaa.gov",
+        "remote-dir": "SL.us008001/DF.bf/DC.intl/",
+        "local-dir": SPOOLDIR_NOAA_GTS + INCOMING,
+        "ftp-user": "anonymous",
+        "ftp-pass": "mah@mah.priv.at"
     },
     "gisc-offenbach": {
         "name": "GISC Offenbach",
@@ -137,5 +145,11 @@ channels = {
         "pattern": ".*\\.gz$",
         "retain" : 14, # days
         "feedlock": SPOOLDIR_NOAA_MADIS + FEED_LOCKFILE,
+
+        "ftp-host": "madis-data.ncep.noaa.gov",
+        "remote-dir": "point/raob/netcdf/",
+        "local-dir": SPOOLDIR_NOAA_MADIS + INCOMING,
+        "ftp-user": "anonymous",
+        "ftp-pass": "mah@mah.priv.at"
     },
 }
