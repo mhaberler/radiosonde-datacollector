@@ -223,7 +223,7 @@ def process_as(
         infile = os.fdopen(fd)
 
         try:
-            gts_topic = gts2wis.mapAHLtoTopic(filename)
+            gts_topic = gts2wis.mapAHLtoTopic(filename.lstrip('0123456789_'))
         except Exception:
             gts_topic = None
 
