@@ -87,7 +87,8 @@ channels = {
         "local-dir": SPOOLDIR_NOAA_GTS + STAGING,
         "ftp-user": "anonymous",
         "ftp-pass": "mah@mah.priv.at",
-        "ftp-glob": "*.bin"
+        "ftp-glob": "*.bin",
+        "ftp-postprocess": "make"
     },
     "gisc-offenbach": {
         "name": "GISC Offenbach",

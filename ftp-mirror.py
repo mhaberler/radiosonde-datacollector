@@ -69,7 +69,7 @@ def main():
         "-p", "--parallel",
         action="store",
         type=int,
-        default=4,
+        default=8,
         help="number of parallel ftp sessions",
     )
     parser.add_argument("channels", nargs="*")
@@ -104,8 +104,10 @@ def main():
             lockfile = chan["feedlock"]
 
             vrb = "--verbose" if args.verbose else ""
-
             cmdline = (f"{config.LFTP} -d -u {ftp_user},{ftp_pass} "
+                       f"-e 'set xfer:temp-file-name *.tmp;' "
+                       f"-e 'set xfer:use-temp-file on;'"
+                       f"-e 'ftp:sync-mode off; '"
                        f"-e 'mirror --parallel={args.parallel} {vrb} "
                        f" --include-glob={ftp_glob} "
                        f"/{remote_dir} {local_dir}; bye' {ftp_host}")
@@ -129,6 +131,10 @@ def main():
                         retcode = 0
                     else:
                         retcode = mirror(cmdline)
+                        if "ftp-postprocess" in chan:
+                            pp  = chan["ftp-postprocess"]
+                            logging.debug(f"should run: {pp}")
+
                     break
 
             except pidfile.ProcessRunningException:
