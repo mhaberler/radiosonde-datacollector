@@ -354,7 +354,7 @@ def convert_bufr_to_geojson(
         lat = lat_t + s["latitudeDisplacement"]
         lon = lon_t + s["longitudeDisplacement"]
         gpheight = s["nonCoordinateGeopotentialHeight"]
-        flags = s.get("extendedVerticalSoundingSignificance", None)
+        flags = s.get("extendedVerticalSoundingSignificance", 0)
 
         delta = timedelta(seconds=s["timePeriod"])
         sampleTime = takeoff + delta
