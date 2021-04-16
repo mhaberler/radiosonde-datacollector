@@ -314,7 +314,7 @@ def process_files(args, wdict, updated_stations):
             # chan = "gisc-offenbach" ..
 
             # protect against feeder running
-            lockfile = config.channels[chan]["feedlock"]
+            lockfile = config.channels[chan].get("feedlock", None)
             try:
                 with pidfile.Pidfile(lockfile,
                                      log=logging.debug,

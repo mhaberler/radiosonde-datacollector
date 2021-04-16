@@ -80,7 +80,7 @@ channels = {
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "keeptime": 0,
         "retain" : 14, # days
-        "feedlock": SPOOLDIR_NOAA_GTS + FEED_LOCKFILE,
+#        "feedlock": SPOOLDIR_NOAA_GTS + FEED_LOCKFILE,
 
         "ftp-host": "tgftp.nws.noaa.gov",
         "remote-dir": "SL.us008001/DF.bf/DC.intl/",
@@ -96,7 +96,7 @@ channels = {
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "keeptime": 0,
         "retain" : 14, # days
-        "feedlock": SPOOLDIR_GISC_OFFENBACH + FEED_LOCKFILE,
+#        "feedlock": SPOOLDIR_GISC_OFFENBACH + FEED_LOCKFILE,
     },
     "gisc-moscow": {
         "name":  "GISC Moscow",
@@ -104,7 +104,7 @@ channels = {
         "keeptime": 0,
         "retain" : 14, # days
         "pattern": ".*\\.(zip|bufr|bfr|bin|b|txt)$",
-        "feedlock": SPOOLDIR_GISC_MOSCOW + FEED_LOCKFILE,
+#        "feedlock": SPOOLDIR_GISC_MOSCOW + FEED_LOCKFILE,
     },
     "meteo-fr": {
         "name": "Meteo France",
@@ -139,7 +139,7 @@ channels = {
         "keeptime": 0,
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "retain" : 14, # days
-        "feedlock": SPOOLDIR_GISC_TOKYO + FEED_LOCKFILE,
+#        "feedlock": SPOOLDIR_GISC_TOKYO + FEED_LOCKFILE,
     },
     "noaa-madis": {
         "name": "NOAA MADIS",
@@ -147,7 +147,7 @@ channels = {
         "keeptime": -1,
         "pattern": ".*\\.gz$",
         "retain" : 14, # days
-        "feedlock": SPOOLDIR_NOAA_MADIS + FEED_LOCKFILE,
+#        "feedlock": SPOOLDIR_NOAA_MADIS + FEED_LOCKFILE,
 
         "ftp-host": "madis-data.ncep.noaa.gov",
         "remote-dir": "point/raob/netcdf/",
