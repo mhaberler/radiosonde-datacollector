@@ -319,7 +319,8 @@ def process_files(args, wdict, updated_stations):
                 with pidfile.Pidfile(lockfile,
                                      log=logging.debug,
                                      warn=logging.debug):
-                    logging.debug(f"acquired {lockfile}")
+                    if lockfile:
+                        logging.debug(f"acquired {lockfile}")
 
                     for filename in flist:
                         if not args.ignore_timestamps and not util.newer(
