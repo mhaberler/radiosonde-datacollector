@@ -11,6 +11,8 @@ class Pidfile():
         self.warn = warn
 
     def __enter__(self):
+        if not self.pidfile:
+            return self
         try:
             self.pidfd = os.open(self.pidfile, os.O_CREAT|os.O_WRONLY|os.O_EXCL)
             self.log(f'locked pidfile {self.pidfile}\n')
@@ -32,6 +34,8 @@ class Pidfile():
         return self
 
     def __exit__(self, t, e, tb):
+        if not self.pidfile:
+            return True
         # return false to raise, true to pass
         if t is None:
             # normal condition, no exception
@@ -48,13 +52,18 @@ class Pidfile():
             return False
 
     def _remove(self):
-        self.log(f'removed pidfile {self.pidfile}\n')
-        os.remove(self.pidfile)
+        if self.pidfile:
+            self.log(f'removed pidfile {self.pidfile}\n')
+            os.remove(self.pidfile)
 
     def _check(self):
         """check if a process is still running
 the process id is expected to be in pidfile, which should exist.
 if it is still running, returns the pid, if not, return False."""
+
+        if not self.pidfile:
+            return False
+
         with open(self.pidfile, 'r') as f:
             try:
                 pidstr = f.read()
