@@ -129,7 +129,7 @@ def bufr_decode(f, filename):
         except Exception:
             missingHdrKeys += 1
 
-    fkeys = [  # 'extendedVerticalSoundingSignificance',
+    fkeys = [
         "pressure",
         "nonCoordinateGeopotentialHeight",
         "latitudeDisplacement",
@@ -138,6 +138,10 @@ def bufr_decode(f, filename):
         "dewpointTemperature",
         "windDirection",
         "windSpeed",
+    ]
+
+    ikeys = [
+        "extendedVerticalSoundingSignificance",
     ]
 
     samples = []
@@ -173,6 +177,15 @@ def bufr_decode(f, filename):
 
         if sampleOK:
             samples.append(sample)
+
+        for k in ikeys:
+            name = f"#{i}#{k}"
+            try:
+                value = codes_get(ibufr, name)
+                if value != CODES_MISSING_LONG and value != 0:
+                    sample[k] = value
+            except Exception as e:
+                pass
 
     logging.debug(
         (
@@ -297,6 +310,7 @@ def convert_bufr_to_geojson(
         lat = lat_t + s["latitudeDisplacement"]
         lon = lon_t + s["longitudeDisplacement"]
         gpheight = s["nonCoordinateGeopotentialHeight"]
+        flags = s.get("extendedVerticalSoundingSignificance", None)
 
         delta = timedelta(seconds=s["timePeriod"])
         sampleTime = takeoff + delta
@@ -319,6 +333,9 @@ def convert_bufr_to_geojson(
                 "wind_v": round(v, 2),
             }
         )
+        if flags:
+            properties["flags"] = flags
+
         f = geojson.Feature(
             geometry=geojson.Point((round(lon, 6), round(lat, 6), round(height, 1))),
             properties=properties,
