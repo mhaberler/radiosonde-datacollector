@@ -360,7 +360,7 @@ def convert_bufr_to_geojson(
         sampleTime = takeoff + delta
 
         height = util.geopotential_height_to_height(gpheight)
-        if height < (previous_elevation + config.HSTEP):
+        if height < (previous_elevation + config.HSTEP) and flags == 0:
             continue
         previous_elevation = height
 
