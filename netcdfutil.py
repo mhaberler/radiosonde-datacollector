@@ -33,8 +33,15 @@ def process_netcdf(data,
                    arrived=None,
                    archive=None,
                    pathSource=None,
-                   source=None,
-                   tagSamples=None):    
+                   source=None):
+
+
+# tag samples with the section source of an FM35 report:
+# mandatory, sig temp, sig wind, max wind
+# aids in debugging strange values
+# "mandatory", "sig_temp", "sig_wind", "max_wind"
+#TAG_FM35 = True
+
 
     try:
         nc = Dataset("inmemory.nc", memory=data)
@@ -47,7 +54,6 @@ def process_netcdf(data,
     sigTLevel = nc.dimensions["sigTLevel"].size
     sigWLevel = nc.dimensions["sigWLevel"].size
     sigPresWLevel = nc.dimensions["sigPresWLevel"].size
-    mWndNum = nc.dimensions["mWndNum"].size
 
     wmo_ids = nc.variables["wmoStaNum"][:].filled(fill_value=np.nan)
     results = []
@@ -63,6 +69,7 @@ def process_netcdf(data,
         staElev = nc.variables["staElev"][i].filled(fill_value=np.nan)
         synTime = nc.variables["synTime"][i].filled(fill_value=np.nan)
         relTime = nc.variables["relTime"][i].filled(fill_value=np.nan)
+
 
         properties = customtypes.DictNoNone()
         u.set_metadata(properties,
@@ -83,7 +90,7 @@ def process_netcdf(data,
         prMan = nc.variables["prMan"][i].filled(fill_value=np.nan)
         tpMan = nc.variables["tpMan"][i].filled(fill_value=np.nan)
         htMan = nc.variables["htMan"][i].filled(fill_value=np.nan)
-        
+
         # "dew point depression" = "spread" for the rest of us
         tdMan = nc.variables["tdMan"][i].filled(fill_value=np.nan)
 
@@ -105,6 +112,10 @@ def process_netcdf(data,
             wu, wv = u.wind_to_UV(wsMan[j], wdMan[j])
             h = u.geopotential_height_to_height(htMan[j])
 
+            f = config.CUSTOM_TEMP_POINT_MASK_MANDATORY_LEVEL
+            if j == 0:
+                f |= config.TEMP_POINT_MASK_SURFACE
+
             sample = customtypes.DictNoNone(init={
                 "pressure": u._round(prMan[j], 2),
                 "dewpoint": u._round(tpMan[j] - tdMan[j], 2),
@@ -113,11 +124,9 @@ def process_netcdf(data,
                 "height": u._round(h, 1),
                 "wind_u": u._round(wu, 2),
                 "wind_v": u._round(wv, 2),
+                "flags" : f
             })
-            if tagSamples:
-                sample["tag"] = "mandatory"
             temp.append(sample)
-                
 
         # pick a base level which has valid p, t, and gph
         refLevel = -1
@@ -155,9 +164,8 @@ def process_netcdf(data,
                 "temp": u._round(tpSigT[j], 2),
                 "gpheight": u._round(gph, 1),
                 "height": u._round(h, 1),
+                "flags": config.TEMP_POINT_MASK_SIGNIFICANT_TEMPERATURE_LEVEL,
             })
-            if tagSamples:
-                sample["tag"] = "sig_temp"
             temp.append(sample)
 
         # sig Wind levels:
@@ -166,10 +174,13 @@ def process_netcdf(data,
         # be missing (nan) so fill in via height and barometric equation:
         #prSigW = nc.variables["prSigW"][i].filled(fill_value=np.nan)
 
+        # Geopotential - Significant level wrt W
         htSigW = nc.variables["htSigW"][i].filled(fill_value=np.nan)
+        # "Wind Speed - Significant level wrt W" ;
         wsSigW = nc.variables["wsSigW"][i].filled(fill_value=np.nan)
+        # "Wind Direction - Significant level wrt W"
         wdSigW = nc.variables["wdSigW"][i].filled(fill_value=np.nan)
-  
+
         # sig wind levels p gph u v
         try:
             for j in range(sigWLevel):
@@ -188,22 +199,26 @@ def process_netcdf(data,
                     "height": u._round(h, 1),
                     "wind_u": u._round(wu, 2),
                     "wind_v": u._round(wv, 2),
+                    "flags": config.TEMP_POINT_MASK_SIGNIFICANT_WIND_LEVEL
                 })
-                if tagSamples:
-                    sample["tag"] = "sig_wind"
                 temp.append(sample)
         except RuntimeWarning as e:
             logging.exception(f"Exception: station {stn} {filename=} : {e}")
             continue
 
+
         # maximum wind levels
-        prMaxW = nc.variables["prMaxW"][i].filled(fill_value=np.nan)
-        wsMaxW = nc.variables["wsMaxW"][i].filled(fill_value=np.nan)
-        wdMaxW = nc.variables["wdMaxW"][i].filled(fill_value=np.nan)
-       
-        for j in range(mWndNum):
+        prMaxW = nc.variables["prMaxW"][i].filled(fill_value=np.nan) # pressure@maxwind n
+        wdMaxW = nc.variables["wdMaxW"][i].filled(fill_value=np.nan) # winddir@maxwind n
+        wsMaxW = nc.variables["wsMaxW"][i].filled(fill_value=np.nan) # windspeed@maxwind n
+
+        numMwnd = int(nc.variables["numMwnd"][i]) # number of max wind levels
+
+        for j in range(numMwnd):
             if isnan(prMaxW[j]) or isnan(wsMaxW[j]) or isnan(wdMaxW[j]):
                 continue
+
+            logging.debug(f"station {stn}: maxwind[{j}] {prMaxW[j]=} {wdMaxW[j]=} {wsMaxW[j]=}")
 
             # add gph, h
             h = round(td.barometric_equation_inv(h0, t0, p0, prMaxW[j]), 1)
@@ -213,14 +228,47 @@ def process_netcdf(data,
             sample = customtypes.DictNoNone(init={
                 "pressure": u._round(prMaxW[j], 2),
                 "gpheight": u._round(gph, 1),
-                "height": u._round(h, 1),  
+                "height": u._round(h, 1),
                 "wind_u": u._round(wu, 2),
                 "wind_v": u._round(wv, 2),
+                "flags": config.TEMP_POINT_MASK_MAXIMUM_WIND_LEVEL,
             })
-            if tagSamples:
-                sample["tag"] = "max_wind"
             temp.append(sample)
-                                            
+
+
+        # tropopause levels
+        prTrop = nc.variables["prTrop"][i].filled(fill_value=np.nan) # pressure@tropopause n
+        tpTrop = nc.variables["tpTrop"][i].filled(fill_value=np.nan) # temp@tropopause n
+        tdTrop = nc.variables["tdTrop"][i].filled(fill_value=np.nan) # spread@tropopause n
+        wdTrop = nc.variables["wdTrop"][i].filled(fill_value=np.nan) # winddir@tropopause n
+        wsTrop = nc.variables["wsTrop"][i].filled(fill_value=np.nan) # windspeed@tropopause n
+
+        numTrop = int(nc.variables["numTrop"][i]) # number of tropopause levels
+
+        for j in range(numTrop):
+            if isnan(prTrop[j]):
+                continue
+
+            logging.debug(f"station {stn}: tropopause[{j}] {prTrop[j]=} {tpTrop[j]=} {tdTrop[j]=} {wdTrop[j]=} {wsTrop[j]=}")
+
+            # add gph, h
+            h = round(td.barometric_equation_inv(h0, t0, p0, prTrop[j]), 1)
+            gph = u.height_to_geopotential_height(h)
+            wu, wv = u.wind_to_UV(wsTrop[j], wdTrop[j])
+
+            sample = customtypes.DictNoNone(init={
+                "pressure": u._round(prTrop[j], 2),
+                "gpheight": u._round(gph, 1),
+                "height": u._round(h, 1),
+                "dewpoint": u._round(tpTrop[j] - tdTrop[j], 2),
+                "temp": u._round(tpTrop[j], 2),
+                "wind_u": u._round(wu, 2),
+                "wind_v": u._round(wv, 2),
+                "flags": config.TEMP_POINT_MASK_TROPOPAUSE_LEVEL
+            })
+            temp.append(sample)
+
+
         # sort descending by pressure
         obs = sorted([{key: value for (key, value)
                        in d.items()} for d in temp],
@@ -259,7 +307,7 @@ def process_netcdf(data,
             height = o["height"]
             # it is in geometry.coordinates[2] anyway, so delete
             del o["height"]
-            
+
             f = geojson.Feature(
                 geometry=geojson.Point((u._round(lon_t, 6),
                                         u._round(lat_t, 6),
@@ -281,10 +329,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
     parser.add_argument("-j", "--json", action="store_true", default=False)
-    parser.add_argument("-t", "--tag-samples",
-                        action="store_true",
-                        default=False,
-                        help="tag the samples by section origin (mandatory, sigW, sigT)")
     parser.add_argument(
         "--station-json",
         action="store",
@@ -303,7 +347,8 @@ if __name__ == "__main__":
     level = logging.WARNING
     if args.verbose:
         level = logging.DEBUG
-    logging.basicConfig(level=level)
+    logging.basicConfig(level=level,
+                        format='%(levelname)-3.3s:%(module)s:%(funcName)s:%(lineno)d  %(message)s')
 
     config.known_stations = json.loads(u.read_file(args.station_json).decode())
 
@@ -314,7 +359,6 @@ if __name__ == "__main__":
             results = process_netcdf(data,
                                     station_name=args.station,
                                     origin=None,
-                                    tagSamples=args.tag_samples,
                                     filename=None,
                                     arrived=arrived,
                                     archive=None)
