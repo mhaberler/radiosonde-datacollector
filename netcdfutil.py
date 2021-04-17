@@ -51,9 +51,9 @@ def process_netcdf(data,
 
     recNum = nc.dimensions["recNum"].size
     manLevel = nc.dimensions["manLevel"].size
-    sigTLevel = nc.dimensions["sigTLevel"].size
-    sigWLevel = nc.dimensions["sigWLevel"].size
-    sigPresWLevel = nc.dimensions["sigPresWLevel"].size
+    # sigTLevel = nc.dimensions["sigTLevel"].size
+    # sigWLevel = nc.dimensions["sigWLevel"].size
+    # sigPresWLevel = nc.dimensions["sigPresWLevel"].size
 
     wmo_ids = nc.variables["wmoStaNum"][:].filled(fill_value=np.nan)
     results = []
@@ -69,7 +69,6 @@ def process_netcdf(data,
         staElev = nc.variables["staElev"][i].filled(fill_value=np.nan)
         synTime = nc.variables["synTime"][i].filled(fill_value=np.nan)
         relTime = nc.variables["relTime"][i].filled(fill_value=np.nan)
-
 
         properties = customtypes.DictNoNone()
         u.set_metadata(properties,
@@ -99,8 +98,11 @@ def process_netcdf(data,
         wdMan = nc.variables["wdMan"][i].filled(fill_value=np.nan)
 
         temp = []
+
         # mandatory levels must have all of p d t gph, optionally speed dir
-        for j in range(manLevel):
+        numMand = int(nc.variables["numMand"][i]) # number of mandatory levels
+
+        for j in range(numMand):
             if isnan(prMan[j]) or isnan(tpMan[j]) or isnan(htMan[j]) or isnan(tdMan[j]):
                 continue
 
@@ -151,7 +153,9 @@ def process_netcdf(data,
         tdSigT = nc.variables["tdSigT"][i].filled(fill_value=np.nan)
 
         # pressure dewpoint temp at sig T levels
-        for j in range(sigTLevel):
+        numSigT = int(nc.variables["numSigT"][i]) # number of sig temp levels
+
+        for j in range(numSigT):
             if isnan(prSigT[j]) or isnan(tpSigT[j]) or isnan(tdSigT[j]):
                 continue
 
@@ -182,8 +186,10 @@ def process_netcdf(data,
         wdSigW = nc.variables["wdSigW"][i].filled(fill_value=np.nan)
 
         # sig wind levels p gph u v
+        numSigW = int(nc.variables["numSigW"][i]) # number of sig temp levels
+
         try:
-            for j in range(sigWLevel):
+            for j in range(numSigW):
                 if isnan(htSigW[j]) or isnan(wsSigW[j]) or isnan(wdSigW[j]):
                     continue
 
