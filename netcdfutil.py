@@ -218,7 +218,7 @@ def process_netcdf(data,
             if isnan(prMaxW[j]) or isnan(wsMaxW[j]) or isnan(wdMaxW[j]):
                 continue
 
-            logging.debug(f"station {stn}: maxwind[{j}] {prMaxW[j]=} {wdMaxW[j]=} {wsMaxW[j]=}")
+            #logging.debug(f"station {stn}: maxwind[{j}] {prMaxW[j]=} {wdMaxW[j]=} {wsMaxW[j]=}")
 
             # add gph, h
             h = round(td.barometric_equation_inv(h0, t0, p0, prMaxW[j]), 1)
@@ -249,7 +249,7 @@ def process_netcdf(data,
             if isnan(prTrop[j]):
                 continue
 
-            logging.debug(f"station {stn}: tropopause[{j}] {prTrop[j]=} {tpTrop[j]=} {tdTrop[j]=} {wdTrop[j]=} {wsTrop[j]=}")
+            #logging.debug(f"station {stn}: tropopause[{j}] {prTrop[j]=} {tpTrop[j]=} {tdTrop[j]=} {wdTrop[j]=} {wsTrop[j]=}")
 
             # add gph, h
             h = round(td.barometric_equation_inv(h0, t0, p0, prTrop[j]), 1)
