@@ -273,7 +273,6 @@ def process_as(
             filename=filename,
             arrived=arrived,
             pathSource="simulated",
-            tagSamples=config.TAG_FM35,
         )
 
         success = True
