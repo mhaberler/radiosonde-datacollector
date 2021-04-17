@@ -52,13 +52,6 @@ known_stations = {}
 # not very reliable, so move to client
 GENERATE_PATHS = False
 
-# tag samples with the section source of an FM35 report:
-# mandatory, sig temp, sig wind, max wind
-# aids in debugging strange values
-# "mandatory", "sig_temp", "sig_wind", "max_wind"
-TAG_FM35 = True
-
-
 # minimum vertical distance of samples to be repored
 # hires BUFR files have a lot of samples
 HSTEP = 100
@@ -156,4 +149,52 @@ channels = {
         "ftp-pass": "mah@mah.priv.at",
         "ftp-glob": "*.gz"
     },
+}
+
+#
+# meaning of bits in "flags" property of a Feature
+# see https://github.com/mhaberler/radiosonde-datacollector/commit/4f13c57b2b801c737c52102c74c3bca5e23fc412
+# these flag bits are from FM94 but we reuse them to mark FM35 levels identically
+#
+TEMP_POINT_MASK_SURFACE = 131072
+TEMP_POINT_MASK_STANDARD_LEVEL = 65536
+TEMP_POINT_MASK_TROPOPAUSE_LEVEL = 32768
+TEMP_POINT_MASK_MAXIMUM_WIND_LEVEL = 16384
+TEMP_POINT_MASK_SIGNIFICANT_TEMPERATURE_LEVEL = 8192
+TEMP_POINT_MASK_SIGNIFICANT_HUMIDITY_LEVEL = 4096
+TEMP_POINT_MASK_SIGNIFICANT_WIND_LEVEL = 2048
+TEMP_POINT_MASK_BEGINNING_OF_MISSING_TEMPERATURE_DATA = 1024
+TEMP_POINT_MASK_END_OF_MISSING_TEMPERATURE_DATA = 512
+TEMP_POINT_MASK_BEGINNING_OF_MISSING_HUMIDITY_DATA = 256
+TEMP_POINT_MASK_END_OF_MISSING_HUMIDITY_DATA = 128
+TEMP_POINT_MASK_BEGINNING_OF_MISSING_WIND_DATA = 64
+TEMP_POINT_MASK_END_OF_MISSING_WIND_DATA = 32
+TEMP_POINT_MASK_TOP_OF_WIND_SOUNDING = 16
+TEMP_POINT_MASK_LEVEL_DETERMINED_BY_REGIONAL_DECISION = 8
+TEMP_POINT_MASK_RESERVED = 4
+TEMP_POINT_MASK_PRESSURE_LEVEL_VERTICAL_COORDINATE = 2
+
+# this one is not in fm94, but we use it to mark a mandatory level in fm35:
+CUSTOM_TEMP_POINT_MASK_MANDATORY_LEVEL = 524288
+
+
+levelFlags = {
+    "mandatory level": CUSTOM_TEMP_POINT_MASK_MANDATORY_LEVEL,
+    "surface": TEMP_POINT_MASK_SURFACE,
+    "standard level": TEMP_POINT_MASK_STANDARD_LEVEL,
+    "tropopause level": TEMP_POINT_MASK_TROPOPAUSE_LEVEL,
+    "maximum wind level": TEMP_POINT_MASK_MAXIMUM_WIND_LEVEL,
+    "significant temperature level": TEMP_POINT_MASK_SIGNIFICANT_TEMPERATURE_LEVEL,
+    "significant humidity level": TEMP_POINT_MASK_SIGNIFICANT_HUMIDITY_LEVEL,
+    "significant wind level": TEMP_POINT_MASK_SIGNIFICANT_WIND_LEVEL,
+    "beginning of missing temperature data": TEMP_POINT_MASK_BEGINNING_OF_MISSING_TEMPERATURE_DATA,
+    "end of missing temperature data": TEMP_POINT_MASK_END_OF_MISSING_TEMPERATURE_DATA,
+    "beginning of missing humidity data": TEMP_POINT_MASK_BEGINNING_OF_MISSING_HUMIDITY_DATA,
+    "end of missing humidity data": TEMP_POINT_MASK_END_OF_MISSING_HUMIDITY_DATA,
+    "beginning of missing wind data": TEMP_POINT_MASK_BEGINNING_OF_MISSING_WIND_DATA,
+    "end of missing wind data": TEMP_POINT_MASK_END_OF_MISSING_WIND_DATA,
+    "top of wind sounding": TEMP_POINT_MASK_TOP_OF_WIND_SOUNDING,
+    "level determined by regional decision": TEMP_POINT_MASK_LEVEL_DETERMINED_BY_REGIONAL_DECISION,
+    "reserved": TEMP_POINT_MASK_RESERVED,
+    "pressure level vertical coordinate": TEMP_POINT_MASK_PRESSURE_LEVEL_VERTICAL_COORDINATE
 }
