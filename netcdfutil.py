@@ -112,7 +112,7 @@ def process_netcdf(data,
             wu, wv = u.wind_to_UV(wsMan[j], wdMan[j])
             h = u.geopotential_height_to_height(htMan[j])
 
-            f = config.CUSTOM_TEMP_POINT_MASK_MANDATORY_LEVEL
+            f = config.TEMP_POINT_MASK_STANDARD_LEVEL
             if j == 0:
                 f |= config.TEMP_POINT_MASK_SURFACE
 
