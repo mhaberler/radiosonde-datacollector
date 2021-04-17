@@ -303,6 +303,11 @@ def process_netcdf(data,
                     lat_t, lon_t = u.latlonPlusDisplacement(
                         lat=lat_t, lon=lon_t, u=du, v=dv)
                     prevSecsIntoFlight = secsIntoFlight
+            else:
+                # assume all samples at release time
+                # FIXME
+                o["time"] = int(relTime)
+
 
             height = o["height"]
             # it is in geometry.coordinates[2] anyway, so delete
