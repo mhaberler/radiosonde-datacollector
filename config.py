@@ -177,12 +177,12 @@ TEMP_POINT_MASK_PRESSURE_LEVEL_VERTICAL_COORDINATE = 2
 
 levelFlags = {
     "surface": TEMP_POINT_MASK_SURFACE,
-    "standard level": TEMP_POINT_MASK_STANDARD_LEVEL,
-    "tropopause level": TEMP_POINT_MASK_TROPOPAUSE_LEVEL,
-    "maximum wind level": TEMP_POINT_MASK_MAXIMUM_WIND_LEVEL,
-    "significant temperature level": TEMP_POINT_MASK_SIGNIFICANT_TEMPERATURE_LEVEL,
-    "significant humidity level": TEMP_POINT_MASK_SIGNIFICANT_HUMIDITY_LEVEL,
-    "significant wind level": TEMP_POINT_MASK_SIGNIFICANT_WIND_LEVEL,
+    "standard": TEMP_POINT_MASK_STANDARD_LEVEL,
+    "tropopause": TEMP_POINT_MASK_TROPOPAUSE_LEVEL,
+    "maximum wind": TEMP_POINT_MASK_MAXIMUM_WIND_LEVEL,
+    "significant temperature": TEMP_POINT_MASK_SIGNIFICANT_TEMPERATURE_LEVEL,
+    "significant humidity": TEMP_POINT_MASK_SIGNIFICANT_HUMIDITY_LEVEL,
+    "significant wind": TEMP_POINT_MASK_SIGNIFICANT_WIND_LEVEL,
     "beginning of missing temperature data": TEMP_POINT_MASK_BEGINNING_OF_MISSING_TEMPERATURE_DATA,
     "end of missing temperature data": TEMP_POINT_MASK_END_OF_MISSING_TEMPERATURE_DATA,
     "beginning of missing humidity data": TEMP_POINT_MASK_BEGINNING_OF_MISSING_HUMIDITY_DATA,
@@ -192,5 +192,5 @@ levelFlags = {
     "top of wind sounding": TEMP_POINT_MASK_TOP_OF_WIND_SOUNDING,
     "level determined by regional decision": TEMP_POINT_MASK_LEVEL_DETERMINED_BY_REGIONAL_DECISION,
     "reserved": TEMP_POINT_MASK_RESERVED,
-    "pressure level vertical coordinate": TEMP_POINT_MASK_PRESSURE_LEVEL_VERTICAL_COORDINATE
+    "pressure vertical coordinate": TEMP_POINT_MASK_PRESSURE_LEVEL_VERTICAL_COORDINATE
 }
