@@ -50,7 +50,7 @@ known_stations = {}
 
 # for FM-35 files which do not have track info
 # not very reliable, so move to client
-GENERATE_PATHS = False
+GENERATE_PATHS = True
 
 # minimum vertical distance of samples to be repored
 # hires BUFR files have a lot of samples
