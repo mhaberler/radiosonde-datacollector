@@ -36,12 +36,10 @@ def process_netcdf(data,
                    source=None):
 
 
-# tag samples with the section source of an FM35 report:
-# mandatory, sig temp, sig wind, max wind
-# aids in debugging strange values
-# "mandatory", "sig_temp", "sig_wind", "max_wind"
-#TAG_FM35 = True
-
+    # tag samples with the section source of an FM35 report:
+    # mandatory, sig temp, sig wind, max wind
+    # aids in debugging strange values
+    # "mandatory", "sig_temp", "sig_wind", "max_wind"
 
     try:
         nc = Dataset("inmemory.nc", memory=data)
@@ -124,9 +122,10 @@ def process_netcdf(data,
             if isnan(prMan[j]) or isnan(tpMan[j]) or isnan(htMan[j]) or isnan(tdMan[j]):
                 continue
 
-            # yes, negative heights found in the wild:
+            # yes, negative heights have been found in the wild:
             if htMan[j] < 0:
                 continue
+
             wu, wv = u.wind_to_UV(wsMan[j], wdMan[j])
             h = u.geopotential_height_to_height(htMan[j])
 
@@ -287,6 +286,7 @@ def process_netcdf(data,
             logging.debug(f"skipping station {stn} - no valid observations, fn={filename})")
             continue
 
+
         if config.GENERATE_PATHS:
             takeoff = relTime
             prevSecsIntoFlight = 0
@@ -297,6 +297,7 @@ def process_netcdf(data,
         fc.properties = properties
 
         for o in obs:
+            height = o["height"]
             if config.GENERATE_PATHS:
                 # gross haque to determine rough time of sample
                 secsIntoFlight = height2time(h0, height)
@@ -318,7 +319,6 @@ def process_netcdf(data,
                 o["time"] = int(relTime)
 
 
-            height = o["height"]
             # it is in geometry.coordinates[2] anyway, so delete
             del o["height"]
 
