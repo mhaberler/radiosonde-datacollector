@@ -2718,7 +2718,15 @@ XXXXXX28695 55.4567 65.4011 70.8 Kurgan, RU 2020
 XXXXXX08383 37.2783  -6.9117 20 Huelva, ES 2020
 XXXXXX26708 56.35 30.6167 97.0 Velikiye Luki, RU 2020
 #
-XXXXXX16332 41.67 12.4508 32.0 Pratica di Mare , IT 2020
+# Lecce Galatina
+# altitudine: 48 metri s.l.m.
+# codice WMO: 16332
+# codice ICAO: LIBN
+# rete: Servizio Meteorologico dell’Aeronautica Militare
+# gestore: Aeronautica Militare
+# anno di inizio delle osservazioni: 1939
+XXXXXX16332 40.23864 18.13924 32.0 Lecce Galatina, IT 2020
+#
 XXXXXX27594 56.2667 44.0 161.1 Nizhniy Novgorod, RU 2020
 XXXXXX61660 27.7 -8.1667 443.0 Tindouf, DZ 2020
 XXXXXX73033 32.8333 -117.1167 133.5 San Diego Miramar, US 2020
