@@ -302,17 +302,9 @@ def process_netcdf(data,
             })
             temp.append(sample)
 
-        # XXX sort descending by pressure
-        # sort ascending by pressure
-
-
-        # possible solution for instability:
-        # sort by height
-        # assign location
-        # sort by pressure
+        # sort descending by pressure
         obs = sorted([{key: value for (key, value)
                        in d.items()} for d in temp],
-#                     key=itemgetter('height'))
                      key=itemgetter('pressure'), reverse=True)
 
         numObs = len(obs)
@@ -333,7 +325,7 @@ def process_netcdf(data,
             # FIXME: improve by exponential decay
             if valid_uvs[0] != obs[0]:
                 valid_uvs.insert(0, {
-                    "height": obs[0]["height"],
+                    "pressure": obs[0]["pressure"],
                     "wind_u": valid_uvs[0]["wind_u"],
                     "wind_v": valid_uvs[0]["wind_v"]
                 })
@@ -341,17 +333,17 @@ def process_netcdf(data,
             # above the highest valid u/v, assume no wind - we do not know
             # alternative: use last valid u/v
             valid_uvs.append({
-                    "height": 1000000.0,
+                    "pressure": 1.0,
                     "wind_u": 0.0,
                     "wind_v": 0.0
                 })
 
-            heights = np.array([x["height"] for x in valid_uvs])
+            pressures = np.array([x["pressure"] for x in valid_uvs])
             wind_u = np.array([x["wind_u"] for x in valid_uvs])
             wind_v = np.array([x["wind_v"] for x in valid_uvs])
 
             logging.debug(f"----- {valid_uvs=}")
-            logging.debug(f"-----\n {heights=}\n {wind_u=}\n {wind_v=}\n")
+            logging.debug(f"-----\n {pressures=}\n {wind_u=}\n {wind_v=}\n")
 
 
         lat_t = properties["lat"]
@@ -367,12 +359,14 @@ def process_netcdf(data,
                 secsIntoFlight = height2time(h0, height)
                 sampleTime = takeoff + secsIntoFlight
                 o["time"] = int(sampleTime)
-
-
-                k = np.searchsorted(heights, height, side='right')
                 p = obs[j]["pressure"]
+
+                # https://stackoverflow.com/questions/43095739/numpy-searchsorted-descending-order
+                k = np.searchsorted(pressures[::-1], p, side='left')
+                #logging.debug(f"----- search for {p=}: {k=}")
+
                 cat = obs[j]["category"]
-                logging.debug(f"----- {height=} {k=} {p=} {heights[k-1]=} {heights[k]=} {cat}")
+                logging.debug(f"----- {p=} {k=} {pressures[k-1]=} {pressures[k]=} {cat}")
 
                 wu = o.get("wind_u", None)
                 wv = o.get("wind_v", None)
