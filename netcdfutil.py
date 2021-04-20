@@ -342,8 +342,8 @@ def process_netcdf(data,
             wind_u = np.array([x["wind_u"] for x in valid_uvs])
             wind_v = np.array([x["wind_v"] for x in valid_uvs])
 
-            logging.debug(f"----- {valid_uvs=}")
-            logging.debug(f"-----\n {pressures=}\n {wind_u=}\n {wind_v=}\n")
+            #logging.debug(f"----- {valid_uvs=}")
+            #logging.debug(f"-----\n {pressures=}\n {wind_u=}\n {wind_v=}\n")
 
 
         lat_t = properties["lat"]
@@ -366,10 +366,20 @@ def process_netcdf(data,
                 #logging.debug(f"----- search for {p=}: {k=}")
 
                 cat = obs[j]["category"]
-                logging.debug(f"----- {p=} {k=} {pressures[k-1]=} {pressures[k]=} {cat}")
 
-                wu = o.get("wind_u", None)
-                wv = o.get("wind_v", None)
+                wu = (wind_u[k-1] + wind_u[k])/2
+                wv = (wind_v[k-1] + wind_v[k])/2
+                #logging.debug(f"----- {p=} {k=} {pressures[k-1]=} {pressures[k]=} {wu=} {wv=} {cat}")
+
+#                  pressures=array([980. , 925. , 850. , 700. , 500. , 276. ,   8.1,   1. ])
+#  wind_u=array([ 0.17,  0.17,  4.75,  4.65, -2.46, -8.17, 32.93,  0.  ])
+#  wind_v=array([ -0.98,  -0.98,   3.99,   8.05,   6.77,  -0.71, -23.06,   0.  ])
+
+# DEB:netcdfutil:process_netcdf:369  ----- p=980.0 k=1 pressures[k-1]=980.0 pressures[k]=925.0 mandatory level
+# DEB:netcdfutil:process_netcdf:369  ----- p=968.0 k=1 pressures[k-1]=980.0 pressures[k]=925.0 sigTemp level
+# DEB:netcdfutil:process_netcdf:369  ----- p=925.0 k=2 pressures[k-1]=925.0 pressures[k]=850.0 mandatory level
+                # wu = o.get("wind_u", None)
+                # wv = o.get("wind_v", None)
                 if wu and wv:
                     dt = secsIntoFlight - prevSecsIntoFlight
                     du = wu * dt
