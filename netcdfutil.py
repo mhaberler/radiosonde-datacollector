@@ -26,6 +26,25 @@ def height2time(h0, height):
     return hdiff / config.ASCENT_RATE
 
 
+def uv(obs):
+    try:
+        return (obs["wind_u"], obs["wind_v"])
+    except KeyError:
+        return None
+
+def uv_at(obs, n):
+    '''
+    return valid tuple (u,v) at level n or None
+    '''
+    try:
+        r = (obs[n]["wind_u"], obs[n]["wind_v"])
+    except IndexError:
+        logging.error(f"{len(obs)=} {n=}")
+        raise
+    except KeyError:
+        return None
+    return r
+
 def process_netcdf(data,
                    station_name=None,
                    origin=None,
@@ -134,6 +153,7 @@ def process_netcdf(data,
                 f |= config.TEMP_POINT_MASK_SURFACE
 
             sample = customtypes.DictNoNone(init={
+                "category": "mandatory level",
                 "pressure": u._round(prMan[j], 2),
                 "dewpoint": u._round(tpMan[j] - tdMan[j], 2),
                 "temp": u._round(tpMan[j], 2),
@@ -155,6 +175,7 @@ def process_netcdf(data,
                 t0 = o["temp"]
                 h0 = o["height"]
                 refLevel = l
+                logging.debug(f"{stn}: {refLevel=}")
                 break
 
         if refLevel < 0:
@@ -178,6 +199,7 @@ def process_netcdf(data,
             gph = u.height_to_geopotential_height(h)
 
             sample = customtypes.DictNoNone(init={
+                "category": "sigTemp level",
                 "pressure": u._round(prSigT[j], 2),
                 "dewpoint": u._round(tpSigT[j] - tdSigT[j], 2),
                 "temp": u._round(tpSigT[j], 2),
@@ -212,6 +234,7 @@ def process_netcdf(data,
 
                 sample = customtypes.DictNoNone()
                 sample.update({
+                    "category": "sigWind level",
                     "pressure": u._round(p, 2),
                     "gpheight": u._round(htSigW[j], 1),
                     "height": u._round(h, 1),
@@ -240,6 +263,7 @@ def process_netcdf(data,
             wu, wv = u.wind_to_UV(wsMaxW[j], wdMaxW[j])
 
             sample = customtypes.DictNoNone(init={
+                "category": "maxWind level",
                 "pressure": u._round(prMaxW[j], 2),
                 "gpheight": u._round(gph, 1),
                 "height": u._round(h, 1),
@@ -266,6 +290,7 @@ def process_netcdf(data,
             wu, wv = u.wind_to_UV(wsTrop[j], wdTrop[j])
 
             sample = customtypes.DictNoNone(init={
+                "category": "tropopause level",
                 "pressure": u._round(prTrop[j], 2),
                 "gpheight": u._round(gph, 1),
                 "height": u._round(h, 1),
@@ -277,32 +302,77 @@ def process_netcdf(data,
             })
             temp.append(sample)
 
-        # sort descending by pressure
+        # XXX sort descending by pressure
+        # sort ascending by pressure
+
+
+        # possible solution for instability:
+        # sort by height
+        # assign location
+        # sort by pressure
         obs = sorted([{key: value for (key, value)
                        in d.items()} for d in temp],
+#                     key=itemgetter('height'))
                      key=itemgetter('pressure'), reverse=True)
 
-        if len(obs) == 0:
+        numObs = len(obs)
+        if numObs == 0:
             logging.debug(f"skipping station {stn} - no valid observations, fn={filename})")
             continue
+
 
 
         if config.GENERATE_PATHS:
             takeoff = relTime
             prevSecsIntoFlight = 0
 
+            valid_uvs = [x for x in obs if uv(x)]
+
+            # if no valid u/v at ground, assume ground wind is same as
+            # first valid u/v
+            # FIXME: improve by exponential decay
+            if valid_uvs[0] != obs[0]:
+                valid_uvs.insert(0, {
+                    "height": obs[0]["height"],
+                    "wind_u": valid_uvs[0]["wind_u"],
+                    "wind_v": valid_uvs[0]["wind_v"]
+                })
+
+            # above the highest valid u/v, assume no wind - we do not know
+            # alternative: use last valid u/v
+            valid_uvs.append({
+                    "height": 1000000.0,
+                    "wind_u": 0.0,
+                    "wind_v": 0.0
+                })
+
+            heights = np.array([x["height"] for x in valid_uvs])
+            wind_u = np.array([x["wind_u"] for x in valid_uvs])
+            wind_v = np.array([x["wind_v"] for x in valid_uvs])
+
+            logging.debug(f"----- {valid_uvs=}")
+            logging.debug(f"-----\n {heights=}\n {wind_u=}\n {wind_v=}\n")
+
+
         lat_t = properties["lat"]
         lon_t = properties["lon"]
         fc = geojson.FeatureCollection([])
         fc.properties = properties
 
-        for o in obs:
+        for j in range(numObs):
+            o = obs[j]
             height = o["height"]
             if config.GENERATE_PATHS:
                 # gross haque to determine rough time of sample
                 secsIntoFlight = height2time(h0, height)
                 sampleTime = takeoff + secsIntoFlight
                 o["time"] = int(sampleTime)
+
+
+                k = np.searchsorted(heights, height, side='right')
+                p = obs[j]["pressure"]
+                cat = obs[j]["category"]
+                logging.debug(f"----- {height=} {k=} {p=} {heights[k-1]=} {heights[k]=} {cat}")
 
                 wu = o.get("wind_u", None)
                 wv = o.get("wind_v", None)
