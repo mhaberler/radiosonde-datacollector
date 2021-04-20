@@ -1,6 +1,10 @@
 FAKE_TIME_STEPS = 30  # assume 30sec update interval
 MAX_FLIGHT_DURATION = 3600 * 5  # rather unlikely
 MAX_DISPLACEMENT = 0.01 # degrees - catch defective BUFR files
+# give up on a file once more than MAX_DISPLACEMENT_COUNT unreasonable
+# displacements have been found
+# suggests defective GPS or bug
+MAX_DISPLACEMENT_COUNT = 30 # degrees - catch defective BUFR files
 
 # see examples/polyfit.py
 # y = 6.31426 * x + -0.00019 * x^2 + -373.12281
