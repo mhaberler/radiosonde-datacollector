@@ -351,8 +351,15 @@ def convert_bufr_to_geojson(
     previous_elevation = fc.properties["elevation"] - config.HSTEP
 
     for s in samples:
-        lat = lat_t + s["latitudeDisplacement"]
-        lon = lon_t + s["longitudeDisplacement"]
+        lat_d = s["latitudeDisplacement"]
+        lon_d = s["longitudeDisplacement"]
+        if (abs(lat_d) > config.MAX_DISPLACEMENT) or (abs(lon_d) > config.MAX_DISPLACEMENT):
+            logging.error(f"station {ident}, {archive} {filename}: "
+                          f"unreasonabe displacement: {lat_d}/{lon_d} deg, skipping file")
+            return None
+
+        lat = lat_t + lat_d
+        lon = lon_t + lon_d
         gpheight = s["nonCoordinateGeopotentialHeight"]
         flags = s.get("extendedVerticalSoundingSignificance", 0)
 
@@ -434,5 +441,8 @@ if __name__ == "__main__":
 
             if args.geojson:
                 arrived = int(util.age(filename))
-                gj = convert_bufr_to_geojson(result, arrived=arrived)
+                gj = convert_bufr_to_geojson(result,
+                                             filename=filename,
+                                             archive='',
+                                             arrived=arrived)
                 print(json.dumps(gj, indent=4, cls=util.NumpyEncoder))
