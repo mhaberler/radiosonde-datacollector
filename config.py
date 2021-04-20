@@ -3,7 +3,7 @@ MAX_FLIGHT_DURATION = 3600 * 5  # rather unlikely
 MAX_DISPLACEMENT = 0.01 # degrees - catch defective BUFR files
 # give up on a file once more than MAX_DISPLACEMENT_COUNT unreasonable
 # displacements have been found
-# suggests defective GPS or bug
+# suggests  GPS did not get a fix, or sw bug
 MAX_DISPLACEMENT_COUNT = 30 # degrees - catch defective BUFR files
 
 # see examples/polyfit.py

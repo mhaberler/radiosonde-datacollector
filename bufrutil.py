@@ -351,20 +351,28 @@ def convert_bufr_to_geojson(
     previous_elevation = fc.properties["elevation"] - config.HSTEP
 
     n_maxd = 0
+    prev_lat_d = 0
+    prev_lon_d = 0
     for s in samples:
         lat_d = s["latitudeDisplacement"]
         lon_d = s["longitudeDisplacement"]
-        if (abs(lat_d) > config.MAX_DISPLACEMENT) or (abs(lon_d) > config.MAX_DISPLACEMENT):
+        dlat = lat_d - prev_lat_d
+        dlon = lon_d - prev_lon_d
+        if (abs(dlat) > config.MAX_DISPLACEMENT) or (abs(dlon) > config.MAX_DISPLACEMENT):
             logging.debug(f"station {ident}, {archive or ''} {filename}: "
-                          f"unreasonable displacement: {lat_d}/{lon_d} deg")
+                          f"unreasonable displacement: {dlat}/{dlon} deg")
             n_maxd += 1
             if n_maxd > config.MAX_DISPLACEMENT_COUNT:
-                logging.error(f"station {ident}, {archive or ''} {filename}: "
+                logging.debug(f"station {ident}, {archive or ''} {filename}: "
                               f"skipping file - too many unreasonable displacements ({n_maxd})")
                 return None
+            # skip this sample
+            continue
 
         lat = lat_t + lat_d
         lon = lon_t + lon_d
+        prev_lat_d = lat_d
+        prev_lon_d = lon_d
         gpheight = s["nonCoordinateGeopotentialHeight"]
         flags = s.get("extendedVerticalSoundingSignificance", 0)
 
