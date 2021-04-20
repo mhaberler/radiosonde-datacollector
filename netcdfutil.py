@@ -362,7 +362,7 @@ def process_netcdf(data,
                 p = obs[j]["pressure"]
 
                 # https://stackoverflow.com/questions/43095739/numpy-searchsorted-descending-order
-                k = np.searchsorted(pressures[::-1], p, side='left')
+                k = np.searchsorted(-pressures, -p, side='right')
                 #logging.debug(f"----- search for {p=}: {k=}")
 
                 cat = obs[j]["category"]
