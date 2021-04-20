@@ -1,6 +1,6 @@
 FAKE_TIME_STEPS = 30  # assume 30sec update interval
 MAX_FLIGHT_DURATION = 3600 * 5  # rather unlikely
-MAX_DISPLACEMENT = 10 # degrees - catch defective BUFR files
+MAX_DISPLACEMENT = 50 # degrees - catch defective BUFR files
 # give up on a file once more than MAX_DISPLACEMENT_COUNT unreasonable
 # displacements have been found
 # suggests  GPS did not get a fix, or sw bug
