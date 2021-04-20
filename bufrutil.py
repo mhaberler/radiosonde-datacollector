@@ -355,7 +355,7 @@ def convert_bufr_to_geojson(
         lon_d = s["longitudeDisplacement"]
         if (abs(lat_d) > config.MAX_DISPLACEMENT) or (abs(lon_d) > config.MAX_DISPLACEMENT):
             logging.error(f"station {ident}, {archive or ''} {filename}: "
-                          f"unreasonabe displacement: {lat_d}/{lon_d} deg, skipping file")
+                          f"unreasonable displacement: {lat_d}/{lon_d} deg, skipping file")
             return None
 
         lat = lat_t + lat_d
