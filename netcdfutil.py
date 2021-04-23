@@ -153,7 +153,7 @@ def process_netcdf(data,
                 f |= config.TEMP_POINT_MASK_SURFACE
 
             sample = customtypes.DictNoNone(init={
-                "category": "mandatory level",
+                #"category": "mandatory level",
                 "pressure": u._round(prMan[j], 2),
                 "dewpoint": u._round(tpMan[j] - tdMan[j], 2),
                 "temp": u._round(tpMan[j], 2),
@@ -175,7 +175,7 @@ def process_netcdf(data,
                 t0 = o["temp"]
                 h0 = o["height"]
                 refLevel = l
-                logging.debug(f"{stn}: {refLevel=}")
+                #logging.debug(f"{stn}: {refLevel=}")
                 break
 
         if refLevel < 0:
@@ -199,7 +199,7 @@ def process_netcdf(data,
             gph = u.height_to_geopotential_height(h)
 
             sample = customtypes.DictNoNone(init={
-                "category": "sigTemp level",
+                #"category": "sigTemp level",
                 "pressure": u._round(prSigT[j], 2),
                 "dewpoint": u._round(tpSigT[j] - tdSigT[j], 2),
                 "temp": u._round(tpSigT[j], 2),
@@ -234,7 +234,7 @@ def process_netcdf(data,
 
                 sample = customtypes.DictNoNone()
                 sample.update({
-                    "category": "sigWind level",
+                    #"category": "sigWind level",
                     "pressure": u._round(p, 2),
                     "gpheight": u._round(htSigW[j], 1),
                     "height": u._round(h, 1),
@@ -263,7 +263,7 @@ def process_netcdf(data,
             wu, wv = u.wind_to_UV(wsMaxW[j], wdMaxW[j])
 
             sample = customtypes.DictNoNone(init={
-                "category": "maxWind level",
+                #"category": "maxWind level",
                 "pressure": u._round(prMaxW[j], 2),
                 "gpheight": u._round(gph, 1),
                 "height": u._round(h, 1),
@@ -290,7 +290,7 @@ def process_netcdf(data,
             wu, wv = u.wind_to_UV(wsTrop[j], wdTrop[j])
 
             sample = customtypes.DictNoNone(init={
-                "category": "tropopause level",
+                #"category": "tropopause level",
                 "pressure": u._round(prTrop[j], 2),
                 "gpheight": u._round(gph, 1),
                 "height": u._round(h, 1),
@@ -312,28 +312,33 @@ def process_netcdf(data,
             logging.debug(f"skipping station {stn} - no valid observations, fn={filename})")
             continue
 
-
-
         if config.GENERATE_PATHS:
             takeoff = relTime
             prevSecsIntoFlight = 0
 
             valid_uvs = [x for x in obs if uv(x)]
+            if len(valid_uvs) == 0:
+                logging.debug(f"skipping station {stn} - no valid u/v values, fn={filename})")
+                continue
 
             # if no valid u/v at ground, assume ground wind is same as
             # first valid u/v
             # FIXME: improve by exponential decay
-            if valid_uvs[0] != obs[0]:
-                valid_uvs.insert(0, {
-                    "pressure": obs[0]["pressure"],
-                    "wind_u": valid_uvs[0]["wind_u"],
-                    "wind_v": valid_uvs[0]["wind_v"]
-                })
+            #logging.debug(valid_uvs[0], obs[0])
+            try:
+                if valid_uvs[0] != obs[0]:
+                    valid_uvs.insert(0, {
+                        "pressure": obs[0]["pressure"],
+                        "wind_u": valid_uvs[0]["wind_u"],
+                        "wind_v": valid_uvs[0]["wind_v"]
+                    })
+            except IndexError as e:
+                logging.debug(f"{valid_uvs=} {obs=}")
 
             # above the highest valid u/v, assume no wind - we do not know
             # alternative: use last valid u/v
             valid_uvs.append({
-                    "pressure": 1.0,
+                    "pressure": -1,
                     "wind_u": 0.0,
                     "wind_v": 0.0
                 })
@@ -341,10 +346,6 @@ def process_netcdf(data,
             pressures = np.array([x["pressure"] for x in valid_uvs])
             wind_u = np.array([x["wind_u"] for x in valid_uvs])
             wind_v = np.array([x["wind_v"] for x in valid_uvs])
-
-            #logging.debug(f"----- {valid_uvs=}")
-            #logging.debug(f"-----\n {pressures=}\n {wind_u=}\n {wind_v=}\n")
-
 
         lat_t = properties["lat"]
         lon_t = properties["lon"]
@@ -363,30 +364,16 @@ def process_netcdf(data,
 
                 # https://stackoverflow.com/questions/43095739/numpy-searchsorted-descending-order
                 k = np.searchsorted(-pressures, -p, side='right')
-                #logging.debug(f"----- search for {p=}: {k=}")
 
-                cat = obs[j]["category"]
+                wu = (wind_u[k-2] + wind_u[k-1])/2
+                wv = (wind_v[k-2] + wind_v[k]-1)/2
 
-                wu = (wind_u[k-1] + wind_u[k])/2
-                wv = (wind_v[k-1] + wind_v[k])/2
-                #logging.debug(f"----- {p=} {k=} {pressures[k-1]=} {pressures[k]=} {wu=} {wv=} {cat}")
-
-#                  pressures=array([980. , 925. , 850. , 700. , 500. , 276. ,   8.1,   1. ])
-#  wind_u=array([ 0.17,  0.17,  4.75,  4.65, -2.46, -8.17, 32.93,  0.  ])
-#  wind_v=array([ -0.98,  -0.98,   3.99,   8.05,   6.77,  -0.71, -23.06,   0.  ])
-
-# DEB:netcdfutil:process_netcdf:369  ----- p=980.0 k=1 pressures[k-1]=980.0 pressures[k]=925.0 mandatory level
-# DEB:netcdfutil:process_netcdf:369  ----- p=968.0 k=1 pressures[k-1]=980.0 pressures[k]=925.0 sigTemp level
-# DEB:netcdfutil:process_netcdf:369  ----- p=925.0 k=2 pressures[k-1]=925.0 pressures[k]=850.0 mandatory level
-                # wu = o.get("wind_u", None)
-                # wv = o.get("wind_v", None)
-                if wu and wv:
-                    dt = secsIntoFlight - prevSecsIntoFlight
-                    du = wu * dt
-                    dv = wv * dt
-                    lat_t, lon_t = u.latlonPlusDisplacement(
-                        lat=lat_t, lon=lon_t, u=du, v=dv)
-                    prevSecsIntoFlight = secsIntoFlight
+                dt = secsIntoFlight - prevSecsIntoFlight
+                du = wu * dt
+                dv = wv * dt
+                lat_t, lon_t = u.latlonPlusDisplacement(
+                    lat=lat_t, lon=lon_t, u=du, v=dv)
+                prevSecsIntoFlight = secsIntoFlight
             else:
                 # assume all samples at release time
                 # FIXME
