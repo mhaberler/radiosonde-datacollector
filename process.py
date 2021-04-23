@@ -416,6 +416,9 @@ def process_files(args, wdict, updated_stations):
                                 except OSError as e:
                                     logging.error(f"{filename}: {e}")
 
+                                except Exception as e:
+                                    logging.exception(f"{filename}: {e}")
+
                                 else:
                                     if not args.ignore_timestamps:
                                         gen_timestamp(fn, success)
