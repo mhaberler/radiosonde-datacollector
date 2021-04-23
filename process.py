@@ -408,16 +408,15 @@ def process_files(args, wdict, updated_stations):
                                         updated_stations,
                                     )
 
-                                except gzip.BadGzipFile as e:
+                                except (gzip.BadGzipFile, OSError) as e:
                                     logging.error(f"{filename}: {e}")
                                     if not args.ignore_timestamps:
                                         gen_timestamp(fn, False)
 
-                                except OSError as e:
-                                    logging.error(f"{filename}: {e}")
-
                                 except Exception as e:
-                                    logging.exception(f"{filename}: {e}")
+                                    logging.exception(f"unhandled exception: {filename}: {e}")
+                                    if not args.ignore_timestamps:
+                                        gen_timestamp(fn, False)
 
                                 else:
                                     if not args.ignore_timestamps:
@@ -425,6 +424,9 @@ def process_files(args, wdict, updated_stations):
 
             except pidfile.ProcessRunningException:
                 logging.debug(f"channel {chan} locked with {lockfile}, skipping")
+
+            except Exception as e:
+                logging.exception(f"-- unhandled exception: {filename}: {e}")
 
 
 def gen_timestamp(fn, success):
