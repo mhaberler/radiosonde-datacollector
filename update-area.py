@@ -20,7 +20,7 @@ def max_distance(lat_s, lon_s, coords):
     maxd = 0
     max_lat = None
     max_lon = None
-    
+
     for lon, lat in coords:
         d = vincenty((lat_s, lon_s), (lat, lon), miles=False)
         if d and d > maxd:
@@ -34,8 +34,9 @@ def detail2np(path):
     gj = util.read_json_file(path, useBrotli=True, asGeojson=True)
     if gj.properties['id_type'] != "wmo":
         return None
-    coords = [x.geometry.coordinates[0:2] for x in gj.features]
-    return np.array(coords) 
+    coords = [x.geometry.coordinates[0:2] for x in gj.features if x.geometry.type == 'Point']
+
+    return np.array(coords)
 
 def walkt_tree(pool, directory, pattern, sid, hull, bbox):
 
@@ -58,7 +59,7 @@ def walkt_tree(pool, directory, pattern, sid, hull, bbox):
                           tolerance=tolerance,
                           highestQuality=highestQuality,
                           returnMarkers=False)
-    
+
     f = geojson.Polygon([coords])
     f.properties = {
         'station_id': sid,
@@ -80,7 +81,7 @@ def walkt_tree(pool, directory, pattern, sid, hull, bbox):
                             'name': sname
                         })
     bbox.features.append(f)
-    
+
     slat = station_list[sid]["lat"]
     slon = station_list[sid]["lon"]
     mlat, mlon, md = max_distance(slat, slon, coords)
@@ -93,7 +94,7 @@ def walkt_tree(pool, directory, pattern, sid, hull, bbox):
             'distance': md
         })
     bbox.features.append(f)
-    
+
     return len(p)
 
 def station_dir(repfmt, station_id, prefix=None):
@@ -144,7 +145,7 @@ def  main():
     logging.basicConfig(level=level)
     install_mp_handler()
     os.umask(0o22)
-    
+
     # no need for pidfile locking
     with Pool(cpu_count()) as pool:
         try:
@@ -154,7 +155,7 @@ def  main():
             global station_list
             station_list = util.read_json_file(args.station_json,
                                                useBrotli=args.station_json.endswith(".br"))
-            
+
             for st, p in station_list.items():
                 sdir =  station_dir("fm94", st, prefix=args.datadir)
 
@@ -172,7 +173,7 @@ def  main():
                                  asGeojson=True)
 
             #logging.warning(f"{nf} flights")
-            
+
         except pidfile.ProcessRunningException:
             logging.error(f"the pid file {config.LOCKFILE} is in use, exiting.")
             return -1
