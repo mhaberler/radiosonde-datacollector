@@ -290,7 +290,8 @@ def gen_id(h):
 
 
 def convert_bufr_to_geojson(
-    h, filename=None, archive=None, gtsTopic=None, arrived=None, channel=None
+        h, filename=None, archive=None, gtsTopic=None, arrived=None, channel=None,
+        lineString=True
 ):
     takeoff = datetime(
         year=h["year"],
@@ -353,6 +354,7 @@ def convert_bufr_to_geojson(
     n_maxd = 0
     prev_lat_d = 0
     prev_lon_d = 0
+    points = []
     for s in samples:
         lat_d = s["latitudeDisplacement"]
         lon_d = s["longitudeDisplacement"]
@@ -400,11 +402,16 @@ def convert_bufr_to_geojson(
         if flags:
             properties["flags"] = flags
 
+        pt = (round(lon, 6), round(lat, 6), round(height, 1))
+        if lineString:
+            points.append(pt)
         f = geojson.Feature(
-            geometry=geojson.Point((round(lon, 6), round(lat, 6), round(height, 1))),
+            geometry=geojson.Point(pt),
             properties=properties,
         )
         fc.features.append(f)
+    if lineString:
+        fc.features.append(geojson.Feature(geometry=geojson.LineString(points)))
     fc.properties["lastSeen"] = int(sampleTime.timestamp())
 
     duration = fc.properties["lastSeen"] - fc.properties["firstSeen"]
