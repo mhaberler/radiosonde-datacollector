@@ -134,7 +134,7 @@ def process_netcdf(data,
         numMwnd = int(nc.variables["numMwnd"][i]) # number of max wind levels
         numTrop = int(nc.variables["numTrop"][i]) # number of tropopause levels
 
-        #logging.debug(f"station {stn} {i=}: {numMand=} {numSigT=} {numSigW=} {numMwnd=} {numTrop=}")
+        logging.debug(f"station {stn} {i=}: {numMand=} {numSigT=} {numSigW=} {numMwnd=} {numTrop=}")
 
         for j in range(numMand):
 
