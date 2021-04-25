@@ -542,7 +542,7 @@ def keep_house(args):
         if keeptime:  # madis special case
             keeptime = args.keep_time
 
-        logging.debug(f"janitor at: {chan} retain={retain}")
+        #logging.debug(f"janitor at: {chan} retain={retain}")
 
         move_files(
             spooldir + config.INCOMING,
