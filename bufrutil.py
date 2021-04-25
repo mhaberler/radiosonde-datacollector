@@ -117,7 +117,7 @@ def bufr_decode(f, filename):
             else:
                 pass
         except Exception as e:
-            logging.debug(f"missing header key={k} e={e}")
+            #logging.debug(f"missing header key={k} e={e}")
             missingHdrKeys += 1
 
     # special-case warts we do not really care about so do not log
