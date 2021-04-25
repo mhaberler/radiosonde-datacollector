@@ -52,7 +52,8 @@ def process_netcdf(data,
                    arrived=None,
                    archive=None,
                    pathSource=None,
-                   source=None):
+                   source=None,
+                   lineString=True):
 
 
     # tag samples with the section source of an FM35 report:
@@ -351,7 +352,7 @@ def process_netcdf(data,
         lon_t = properties["lon"]
         fc = geojson.FeatureCollection([])
         fc.properties = properties
-
+        points = []
         for j in range(numObs):
             o = obs[j]
             height = o["height"]
@@ -382,13 +383,16 @@ def process_netcdf(data,
 
             # it is in geometry.coordinates[2] anyway, so delete
             del o["height"]
-
+            pt = (u._round(lon_t, 6), u._round(lat_t, 6), u._round(height, 1))
+            if lineString:
+                points.append(pt)
             f = geojson.Feature(
-                geometry=geojson.Point((u._round(lon_t, 6),
-                                        u._round(lat_t, 6),
-                                        u._round(height, 1))),
+                geometry=geojson.Point(pt),
                 properties=o)
             fc.features.append(f)
+
+        if lineString:
+            fc.features.append(geojson.Feature(geometry=geojson.LineString(points)))
         if fc:
             results.append(fc)
     return results
