@@ -113,9 +113,7 @@ def process_netcdf(data,
 
         # mandatory levels must have all of p d t gph, optionally speed dir
         numMand = int(nc.variables["numMand"][i]) # number of mandatory levels
-        if numMand < 2:
-            logging.debug(f"station {stn}: insufficient observations - skipping, {numMand=} ")
-            continue
+
 
         # pressure dewpoint temp at sig T levels
         numSigT = nc.variables["numSigT"][i] # number of sig temp levels
@@ -134,7 +132,10 @@ def process_netcdf(data,
         numMwnd = int(nc.variables["numMwnd"][i]) # number of max wind levels
         numTrop = int(nc.variables["numTrop"][i]) # number of tropopause levels
 
-        logging.debug(f"station {stn} {i=}: {numMand=} {numSigT=} {numSigW=} {numMwnd=} {numTrop=}")
+        logging.debug(f"station {stn}: {numMand=} {numSigT=} {numSigW=} {numMwnd=} {numTrop=}"
+                      f" {['insufficient observations - skipping' if numMand < 2 else '']}")
+        if numMand < 2:
+            continue
 
         for j in range(numMand):
 
