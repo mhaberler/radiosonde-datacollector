@@ -133,7 +133,7 @@ def process_netcdf(data,
         numTrop = int(nc.variables["numTrop"][i]) # number of tropopause levels
 
         logging.debug(f"station {stn}: {numMand=} {numSigT=} {numSigW=} {numMwnd=} {numTrop=}"
-                      f" {['insufficient observations - skipping' if numMand < 2 else '']}")
+                      f" {'insufficient observations - skipping' if numMand < 2 else ''}")
         if numMand < 2:
             continue
 
