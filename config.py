@@ -111,25 +111,6 @@ channels = {
         "pattern": ".*\\.(zip|bufr|bfr|bin)$",
         "retain" : 14, # days
         "feedlock": SPOOLDIR_METEO_FR + FEED_LOCKFILE,
-
-        # "stations": [
-        #     # 0,12
-        #     "07145",  # Paris-Trappes
-        #     "07110",  # Brest-Guipavas
-        #     "07761",  # Ajaccio
-        #     "07645",  # Nîmes-Courbessac
-        #     "07510",  # Bordeaux-Mérignac
-        #     "61998",  # Kerguelen
-        #     "81405",  # Rochambeau
-        #     "61980",  # Gillot
-        #     "91925",  # Hiva-Oa
-        #     "91938",  # Faa'a
-        #     "91592",  # Nouméa
-
-        #     "89642",  # Dumont D'Urville - 0h
-        #     "78897",  # Le Raizet 12h
-        #     "91958",  # Rapa 18h
-        # ],
     },
     "gisc-tokyo": {
         "name": "GISC Tokyo",
