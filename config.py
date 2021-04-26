@@ -49,7 +49,6 @@ MESSAGE_START_SIGNATURE = b"BUFR"
 # 4 - using deep subdirs year/month under station
 FORMAT_VERSION = 7
 
-
 # set in process.py, read-only
 known_stations = {}
 
