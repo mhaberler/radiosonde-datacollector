@@ -27,6 +27,7 @@ SUMMARY = "summary.geojson.br"
 FM94_AREA = "area-fm94.geojson.br"
 FM94_BBOX = "bbox-fm94.geojson.br"
 FM94_MAXDIST = "maxdist-fm94.geojson.br"
+METEOSTAT_JSON = "full.json"
 
 PROCESSED = r"processed"
 FAILED = r"failed"
