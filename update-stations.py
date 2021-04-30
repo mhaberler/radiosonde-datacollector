@@ -19,7 +19,7 @@ import config
 import util
 
 
-def initialize_stations(txt_fn, json_fn):
+def initialize_stations(txt_fn, json_fn, ms):
     US_STATES = [
         "AK",
         "AL",
@@ -100,16 +100,53 @@ def initialize_stations(txt_fn, json_fn):
                     "lon": stn_lon,
                     "elevation": stn_altitude,
                 }
-        util.write_json_file(stationdict, json_fn)
+    # insert ICAO id if present
+    for id in stationdict.keys():
+        try:
+           icao = ms[id]["identifiers"]["icao"]
+           if icao:
+               stationdict[id]["icao"] = icao
+        except KeyError:
+            pass
+    for id in ms.keys():
+        if not re.match(r"^\d{5}$", id):
+            continue
+        if re.match(r"buoy", ms[id]["name"]["en"], re.IGNORECASE):
+            continue
+        if id not in stationdict:
+            stationdict[id] = {
+                    "name": ms[id]["name"]["en"],
+                    "lat": ms[id]["location"]["latitude"],
+                    "lon": ms[id]["location"]["longitude"],
+                    "elevation": ms[id]["location"]["elevation"]
+                }
+            icao = ms[id]["identifiers"]["icao"]
+            if icao:
+               stationdict[id]["icao"] = icao
+
+            print(stationdict[id])
+
+    util.write_json_file(stationdict, json_fn)
+
+def read_meteostat(fn):
+    stations = {}
+    try:
+        ms = util.read_json_file(fn, useBrotli=False, asGeojson=False)
+        for s in ms:
+            stations[s["id"]] = s
+        return stations
+    except Exception:
+        logging.exception(f"could not read {fn}")
+        return dict()
 
 
-def update_station_list(txt, jsn):
+def update_station_list(txt, jsn, ms):
 
-    if util.age(txt) < util.age(jsn):
-        return
+    # if util.age(txt) < util.age(jsn):
+    #     return
 
     # rebuild the json file
-    initialize_stations(txt, jsn)
+    initialize_stations(txt, jsn, ms)
     logging.debug(f"rebuilt {jsn} from {txt}")
 
 
@@ -125,6 +162,12 @@ def main():
         action="store",
         default=config.STATION_LIST,
         help="path to write the station_list.json file",
+    )
+    parser.add_argument(
+        "--meteostat",
+        action="store",
+        default=config.METEOSTAT_JSON,
+        help="path to the Meteostat full.json file",
     )
     parser.add_argument(
         "--station-text",
@@ -148,11 +191,12 @@ def main():
         logging.error(f"the {args.station_text} does not exist")
         sys.exit(1)
 
+    ms = read_meteostat(args.meteostat)
 
     try:
         with pidfile.Pidfile(config.LOCKFILE, log=logging.debug, warn=logging.debug):
 
-            update_station_list(args.station_text, args.station_json)
+            update_station_list(args.station_text, args.station_json, ms)
 
     except pidfile.ProcessRunningException:
         logging.warning(f"the pid file {config.LOCKFILE}is in use, exiting.")
