@@ -173,6 +173,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
             if icao:
                if icao not in name:
                    f.properties["name"] = name + " " + icao
+                   logging.debug(f"{sid}: added {icao} to {name}")
         except KeyError:
             pass
         ns += 1
