@@ -124,7 +124,7 @@ def initialize_stations(txt_fn, json_fn, ms):
             if icao:
                stationdict[id]["icao"] = icao
 
-            print(stationdict[id])
+            #print(stationdict[id])
 
     util.write_json_file(stationdict, json_fn)
 
