@@ -237,7 +237,7 @@ def read_file(name, useBrotli=False):
         if useBrotli:
             s = brotli.decompress(s)
             ratio = (sl / len(s)) * 100.0
-            logging.debug(f"w {name}: brotli {sl} -> {len(s)}, {ratio:.1f}%")
+            logging.debug(f"r {name}: brotli {sl} -> {len(s)}, {ratio:.1f}%")
         return s
 
 
