@@ -169,7 +169,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
         f.properties["id_type"] = stype
         try:
             name = f.properties["name"]
-            icao = stations[sid]["identifiers"]["icao"]
+            icao = stations[sid]["icao"]
             if icao:
                if icao not in name:
                    f.properties["name"] = name + " " + icao
