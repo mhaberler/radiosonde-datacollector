@@ -167,6 +167,14 @@ def update_geojson_summary(args, stations, updated_stations, summary):
         sid, stype = slimdown(f)
         f.properties["station_id"] = sid
         f.properties["id_type"] = stype
+        try:
+            name = f.properties["name"]
+            icao = stations[sid]["identifiers"]["icao"]
+            if icao:
+               if icao not in name:
+                   f.properties["name"] = name + " " + icao
+        except KeyError:
+            pass
         ns += 1
         na += len(f.properties["ascents"])
         fc.features.append(f)
