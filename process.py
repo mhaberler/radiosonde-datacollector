@@ -127,7 +127,11 @@ def update_geojson_summary(args, stations, updated_stations, summary):
             if station in stations:
                 st = stations[station]
                 coords = (st["lon"], st["lat"], st["elevation"])
-                properties["name"] = st["name"]
+                icao = st.get("icao", None)
+                if icao:
+                    properties["name"] = st["name"] + " " + icao
+                else:
+                    properties["name"] = st["name"]
                 properties["station_id"] = station
                 properties["id_type"] = "wmo"
             else:
