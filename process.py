@@ -117,8 +117,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                         properties=properties,
                     )
             except Exception as e:
-                print("--exception ", e)
-                pprint(asc)
+                logging.exception(f" {asc}")
 
         else:
             # station appears with first-time ascent
