@@ -142,8 +142,8 @@ def read_meteostat(fn):
 
 def update_station_list(txt, jsn, ms):
 
-    # if util.age(txt) < util.age(jsn):
-    #     return
+    if util.age(txt) < util.age(jsn):
+        return
 
     # rebuild the json file
     initialize_stations(txt, jsn, ms)
