@@ -11,7 +11,7 @@ radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Rad
 
 ## Try it out:
 
-[radiosonde](https://radiosonde.mah.priv.at/app/) is a simple Javascript application based on the venerable [bootleaf](https://bootleaf.xyz/) code.
+[radiosonde](https://radiosonde.mah.priv.at/) is a simple Javascript application based on the venerable [bootleaf](https://bootleaf.xyz/) code.
 
 ## Screen shot
 
