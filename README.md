@@ -11,11 +11,16 @@ radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Rad
 
 ## Try it out:
 
+[windy.com](https://windy.com) Try the radiosonde plugin by @rittels. [See also here](https://www.npmjs.com/package/windy-plugin-radiosonde).
+
+
+![shot](https://static.mah.priv.at:public/windy-radiosonde.png)
+
 [radiosonde](https://radiosonde.mah.priv.at/) is a simple Javascript application based on the venerable [bootleaf](https://bootleaf.xyz/) code.
 
-## Screen shot
-
 ![shot](https://static.mah.priv.at/public/radiosonde-screenshot.jpg)
+
+
 ## Why
 
 Radiosonde data is very useful for meteo forecasting, in particular for aviation use and for correlating weather forecasts with actually measured data. However, there is no single source and access method for raw data providing global coverage, and there is no single file format for that data. radiosonde-datacollector deals with different sources,  their file formats, and converts them into a single format - a compressed [GeoJSON](https://geojson.org/) file. [Here is an example](https://radiosonde.mah.priv.at/data/fm94/11/035/2021/05/11035_20210501_000000.geojson) from Vienna/Austria. Typical terms used for such files include sounding, "temps" (temperature soundiing), or "ascent" - the latter term being used throughout this code.
