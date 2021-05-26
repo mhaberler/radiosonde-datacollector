@@ -33,7 +33,8 @@ Without going into the organisational intricacies of [weather bureaucracies](htt
 The data is obtained through a variety of methods as there seems to be no consensus in the meteo industry. So we have: FTP pull, FTP push, HTTP pull, and HTTP push, both in anonymous and authenticated context.
 
 ## How much
-There are some [2600 registered locations](https://radiosonde.mah.priv.at/static/station_list.txt) which provide meteorological data. Ontop, there are  mobile stations like research vessels which provide soundings from varying locations. Of these, currently about 730 provide sounding data. The [radiosonde-datacollector summary file](https://radiosonde.mah.priv.at/data-dev/summary.geojson) currently retains 14  days of sounding data and that amounts to about 20.000 soundings - so, on average, two soundings per day and station.
+There are some [2600 registered locations](https://radiosonde.mah.priv.at/static/station_list.txt) which provide meteorological data. Ontop, there are  mobile stations like research vessels which provide soundings from varying locations. Of these, currently about 730 provide sounding data. The [radiosonde-datacollector summary file](https://radiosonde.mah.priv.at/data/summary.geojson) currently retains 14  days of sounding data and that amounts to about 20.000 soundings - so, on average, two soundings per day and station.
+
 
 All aggegators except NOAA MADIS use the more modern [FM94 BUFR](https://www.romsaf.org/romsaf_bufr.pdf) format which includes the flight path, and very dense samples (like every 2 seconds). The MADIS data is based on the older [FM35 format](http://vietorweather.net/wxp/appendix1/Formats/TEMP.html) wrapped into a [netCDF](https://www.unidata.ucar.edu/software/netcdf/)-formatted file and has no flight path information, Also it has rather coarse vertical resolution, which varies depending on contribution organisation (sometimes within a country).
 
@@ -50,6 +51,16 @@ Ths original [Skew-T example](https://unidata.github.io/python-gallery/examples/
 
 ![SkewT Diagram using radiosonde-datacollector as source](https://raw.githubusercontent.com/mhaberler/radiosonde-datacollector/master/examples/thalerhof.jpg)
 
+
+## Accessing specific ascent files
+
+You need data format (fm94 or fm35), WMO station id, and date + synoptic time of the ascent. Then construct the URL like so (this example assumes format=fm94, station=11035, date 20210526 1300):
+
+````
+https://radiosonde.mah.priv.at/data/fm94/11/035/2021/05/11035_20210526_130000.geojson.br
+````
+
+All ascents are compressed using the brotli compressor. Since practically all browsers understand this format, you can drop the .br extension and just [access the files like so](https://radiosonde.mah.priv.at/data/fm94/11/035/2021/05/11035_20210526_130000.geojson).
 
 ## Related services
 The University of Wyoming runs an archive of soundings with pretty good coverage - [example here](http://weather.uwyo.edu/cgi-bin/bufrraob.py?datetime=2021-02-24%2012:00:00&id=10238&type=TEXT:LIST). This website is also used from [Python code](https://unidata.github.io/python-gallery/examples/SkewT_Example.html).
