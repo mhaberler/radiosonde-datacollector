@@ -5,9 +5,9 @@
 
 ## What
 
-radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Radiosonde) [soundings](https://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/atmosphere/radio-soundings.html)  from different sources, and converts it into a web-friendly format for further use by applications such as [radiosonde](https://radiosonde.mah.priv.at/app/) and https://www.npmjs.com/package/windy-plugin-radiosonde. Typical use cases include [Skew-T](https://www.weather.gov/source/zhu/ZHU_Training_Page/convective_parameters/skewt/skewtinfo.html)  and [Stuve](http://www.csun.edu/~hmc60533/CSUN_103/weather_exercises/soundings/smog_and_inversions/Understanding%20Stuve_v3.htm) diagrams.
+radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Radiosonde) [soundings](https://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/atmosphere/radio-soundings.html)  from different sources, and converts them into a web-friendly format for further use by applications such as [radiosonde](https://radiosonde.mah.priv.at/dev/) and https://www.npmjs.com/package/windy-plugin-radiosonde. Typical use cases include [Skew-T](https://www.weather.gov/source/zhu/ZHU_Training_Page/convective_parameters/skewt/skewtinfo.html)  and [Stuve](http://www.csun.edu/~hmc60533/CSUN_103/weather_exercises/soundings/smog_and_inversions/Understanding%20Stuve_v3.htm) diagrams.
 
- The goal is to provide global coverage for sounding data with minimum delay and fast retrieval for client apps.
+ The goal is to provide global coverage for sounding data with minimum delay and fast retrieval for client web apps.
 
 ## Try it out:
 
