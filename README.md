@@ -68,7 +68,9 @@ https://radiosonde.mah.priv.at/data/fm94/11/035/2021/05/11035_20210526_130000.ge
 All ascents are compressed using the brotli compressor. Since practically all browsers understand this format, you can drop the .br extension and just [access the files like so](https://radiosonde.mah.priv.at/data/fm94/11/035/2021/05/11035_20210526_130000.geojson).
 
 ## Related services
-The University of Wyoming runs an archive of soundings with pretty good coverage - [example here](http://weather.uwyo.edu/cgi-bin/bufrraob.py?datetime=2021-02-24%2012:00:00&id=10238&type=TEXT:LIST). This website is also used from [Python code](https://unidata.github.io/python-gallery/examples/SkewT_Example.html).
+The University of Wyoming runs an archive of soundings with pretty good coverage - [example here](http://weather.uwyo.edu/cgi-bin/bufrraob.py?datetime=2021-02-24%2012:00:00&id=10238&type=TEXT:LIST). This website is also used as data source by many meteorologists, for example from [Python code](https://unidata.github.io/python-gallery/examples/SkewT_Example.html).
+
+The UofWyoming service serves as a yardstick in terms of coverage and accuracy. It is interesting to note that all the aggregation and processing work behind this service is a side project by an individual researcher - we have no found any service with global coverage by any "official" provider.
 
 ## Credits
 The idea to use MADIS came from [skewt](https://github.com/johnckealy/skewtapi/blob/master/scripts/query_madis.py) - thanks, John!
