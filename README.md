@@ -14,7 +14,7 @@ radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Rad
 [windy.com](https://windy.com) Try the radiosonde plugin by @rittels. [See also here](https://www.npmjs.com/package/windy-plugin-radiosonde).
 
 
-![shot](https://static.mah.priv.at:public/windy-radiosonde.png)
+![shot](https://static.mah.priv.at/public/windy-radiosonde.png)
 
 [radiosonde](https://radiosonde.mah.priv.at/) is a simple Javascript application based on the venerable [bootleaf](https://bootleaf.xyz/) code.
 
