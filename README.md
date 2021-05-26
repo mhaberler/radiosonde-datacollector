@@ -50,8 +50,6 @@ Ths original [Skew-T example](https://unidata.github.io/python-gallery/examples/
 
 ![SkewT Diagram using radiosonde-datacollector as source](https://raw.githubusercontent.com/mhaberler/radiosonde-datacollector/master/examples/thalerhof.jpg)
 
-## The gory details
-Following in next installment.
 
 ## Related services
 The University of Wyoming runs an archive of soundings with pretty good coverage - [example here](http://weather.uwyo.edu/cgi-bin/bufrraob.py?datetime=2021-02-24%2012:00:00&id=10238&type=TEXT:LIST). This website is also used from [Python code](https://unidata.github.io/python-gallery/examples/SkewT_Example.html).
