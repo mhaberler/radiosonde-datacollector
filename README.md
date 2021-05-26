@@ -16,7 +16,7 @@ radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Rad
 
 ![shot](https://static.mah.priv.at/public/windy-radiosonde.png)
 
-[radiosonde](https://radiosonde.mah.priv.at/) is a simple Javascript application based on the venerable [bootleaf](https://bootleaf.xyz/) code.
+[radiosonde](https://radiosonde.mah.priv.at/) is a simple Javascript application based on the venerable [bootleaf](https://bootleaf.xyz/) code. It is not intended for general use but rather as a test vehicle for backend changes and as a display for my absolutely appalling Javascript skills.
 
 ![shot](https://static.mah.priv.at/public/radiosonde-screenshot.jpg)
 
