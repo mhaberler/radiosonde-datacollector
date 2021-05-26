@@ -5,7 +5,7 @@
 
 ## What
 
-radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Radiosonde) [soundings](https://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/atmosphere/radio-soundings.html)  from different sources, and converts it into a web-friendly format for further use by applications such as [radiosonde](https://radiosonde.mah.priv.at/app/) and XXXX. Typical use cases include [Skew-T](https://www.weather.gov/source/zhu/ZHU_Training_Page/convective_parameters/skewt/skewtinfo.html)  and [Stuve](http://www.csun.edu/~hmc60533/CSUN_103/weather_exercises/soundings/smog_and_inversions/Understanding%20Stuve_v3.htm) diagrams.
+radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Radiosonde) [soundings](https://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/atmosphere/radio-soundings.html)  from different sources, and converts it into a web-friendly format for further use by applications such as [radiosonde](https://radiosonde.mah.priv.at/app/) and https://www.npmjs.com/package/windy-plugin-radiosonde. Typical use cases include [Skew-T](https://www.weather.gov/source/zhu/ZHU_Training_Page/convective_parameters/skewt/skewtinfo.html)  and [Stuve](http://www.csun.edu/~hmc60533/CSUN_103/weather_exercises/soundings/smog_and_inversions/Understanding%20Stuve_v3.htm) diagrams.
 
  The goal is to provide global coverage for sounding data with minimum delay and fast retrieval for client apps.
 
@@ -21,18 +21,21 @@ radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Rad
 Radiosonde data is very useful for meteo forecasting, in particular for aviation use and for correlating weather forecasts with actually measured data. However, there is no single source and access method for raw data providing global coverage, and there is no single file format for that data. radiosonde-datacollector deals with different sources,  their file formats, and converts them into a single format - a compressed [GeoJSON](https://geojson.org/) file. [Here is an example](https://radiosonde.mah.priv.at/data/fm94/11/035/2021/05/11035_20210501_000000.geojson) from Vienna/Austria. Typical terms used for such files include sounding, "temps" (temperature soundiing), or "ascent" - the latter term being used throughout this code.
 
 ## Where does the data come from
-Without going into the organisational intricacies of [weather bureaucracies](https://public.wmo.int/en), I found two data aggregators which together provide decent global coverage:
+Without going into the organisational intricacies of [weather bureaucracies](https://public.wmo.int/en), I found several aggregators which together provide decent global coverage:
 
- 1. [Deutscher Wetterdienst](https://www.dwd.de/EN/Home/home_node.html) through its [GISC](https://gisc.dwd.de/wisportal/#) service
- 2. [NOAA](https://www.noaa.gov/) through its [MADIS](https://madis.ncep.noaa.gov/) service
+ 1. [GISC Offenbach](https://www.dwd.de/EN/Home/home_node.html) through its [Deutscher Wetterdienst open data portal](https://gisc.dwd.de/wisportal/#) service
+ 2. [NOAA GTS](https://www.weather.gov/tg/obsfiles)
+ 4. [GISC Moscow](http://portal.gisc-msk.wis.mecom.ru:8080/portal/portal/gisc-user/main)
+ 5. [GISC Tokyo](https://www.wis-jma.go.jp/cms/index.html)
+ 6. [Meteo France](https://donneespubliques.meteofrance.fr/donnees_libres/) 
+ 7. [NOAA MADIS](https://www.noaa.gov/) through its [MADIS](https://madis.ncep.noaa.gov/) service
 
-GISC provides a push service delivering data by mail, http/https put, sftp or ftp for individual files or pre-packaged subscriptions, of which the 'TEMP_Data-global_FM94' is relevant for this purpose. This code currently uses https put as delivery method to an nginx-based server.
-MADIS provides [anonymous ftp access](ftp://madis-data.ncep.noaa.gov/point/raob/netcdf/) which can be mirrored. This is what this code does.
+The data is obtained through a variety of methods as there seems to be no consensus in the meteo industry. So we have: FTP pull, FTP push, HTTP pull, and HTTP push, both in anonymous and authenticated context.
 
 ## How much
-There are some [2600 registered locations](https://radiosonde.mah.priv.at/static/station_list.txt) which provide meteorological data. Ontop, there are  mobile stations like research vessels which provide soundings from varying locations. Of these, currently about 700 provide sounding data. The [radiosonde-datacollector summary file](https://radiosonde.mah.priv.at/data-dev/summary.geojson) currently retains three days of sounding data and that amounts to about 4000 soundings - so, on average, two soundings per day and station.
+There are some [2600 registered locations](https://radiosonde.mah.priv.at/static/station_list.txt) which provide meteorological data. Ontop, there are  mobile stations like research vessels which provide soundings from varying locations. Of these, currently about 730 provide sounding data. The [radiosonde-datacollector summary file](https://radiosonde.mah.priv.at/data-dev/summary.geojson) currently retains 14  days of sounding data and that amounts to about 20.000 soundings - so, on average, two soundings per day and station.
 
-The data provided by DWD uses the more modern [FM94 BUFR](https://www.romsaf.org/romsaf_bufr.pdf) format which includes the flight path, and very dense samples (like every 2 seconds). The MADIS data is based on the older [FM35 format](http://vietorweather.net/wxp/appendix1/Formats/TEMP.html) wrapped into a [netCDF](https://www.unidata.ucar.edu/software/netcdf/)-formatted file and has no flight path information, Also it has rather course vertical resolution, which varies depending on contribution organisation (sometimes within a country).
+All aggegators except NOAA MADIS use the more modern [FM94 BUFR](https://www.romsaf.org/romsaf_bufr.pdf) format which includes the flight path, and very dense samples (like every 2 seconds). The MADIS data is based on the older [FM35 format](http://vietorweather.net/wxp/appendix1/Formats/TEMP.html) wrapped into a [netCDF](https://www.unidata.ucar.edu/software/netcdf/)-formatted file and has no flight path information, Also it has rather coarse vertical resolution, which varies depending on contribution organisation (sometimes within a country).
 
 
 ## How big
@@ -54,4 +57,4 @@ Following in next installment.
 The University of Wyoming runs an archive of soundings with pretty good coverage - [example here](http://weather.uwyo.edu/cgi-bin/bufrraob.py?datetime=2021-02-24%2012:00:00&id=10238&type=TEXT:LIST). This website is also used from [Python code](https://unidata.github.io/python-gallery/examples/SkewT_Example.html).
 
 ## Credits
-The MADIS processing code is a straight lift from [skewt](https://github.com/johnckealy/skewtapi/blob/master/scripts/query_madis.py) - thanks, John!
+The idea to use MADIS came from [skewt](https://github.com/johnckealy/skewtapi/blob/master/scripts/query_madis.py) - thanks, John!
