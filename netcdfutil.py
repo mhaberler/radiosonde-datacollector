@@ -354,7 +354,7 @@ def process_netcdf(data,
             lon_t = properties["lon"]
         except KeyError as e:
             logging.error(f"skipping station {stn} - lat/lon missing, {staLat=} {staLon=} {staElev=} fn={filename}")
-            return []
+            continue
 
         fc = geojson.FeatureCollection([])
         fc.properties = properties
