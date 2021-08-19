@@ -320,7 +320,7 @@ def process_netcdf(data,
 
             valid_uvs = [x for x in obs if uv(x)]
             if len(valid_uvs) == 0:
-                logging.debug(f"skipping station {stn} - no valid u/v values, fn={filename})")
+                logging.debug(f"skipping station {stn} - no valid u/v values,  fn={filename})")
                 continue
 
             # if no valid u/v at ground, assume ground wind is same as
@@ -349,8 +349,13 @@ def process_netcdf(data,
             wind_u = np.array([x["wind_u"] for x in valid_uvs])
             wind_v = np.array([x["wind_v"] for x in valid_uvs])
 
-        lat_t = properties["lat"]
-        lon_t = properties["lon"]
+        try:
+            lat_t = properties["lat"]
+            lon_t = properties["lon"]
+        except KeyError as e:
+            logging.error(f"skipping station {stn} - lat/lon missing, {staLat=} {staLon=} {staElev=} fn={filename}")
+            return []
+
         fc = geojson.FeatureCollection([])
         fc.properties = properties
         points = []
