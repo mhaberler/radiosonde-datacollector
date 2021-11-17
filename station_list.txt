@@ -2695,7 +2695,11 @@ USC00317516  36.3464  -78.8858  216.4    ROXBORO_7_ESE                  1900 190
 #
 XXXXXX72413 38.9767 -77.4858 88.4 Brambleton, US 2020
 XXXXXX74006 32.8636 -114.0331 231.0 Wellton, US 2020
-XXXXXX80371 4.7 -74.15 2547.0 Funza, CO 2020
+
+# wrong
+# XXXXXX80371 4.7 -74.15 2547.0 Funza, CO 2020
+# try this
+XXXXXX80371 -74.15 4.7  2547.0 Funza, CO 2020
 #
 XXXXXX22008 68.9833 33.1167 121.0 MURMANSK, RU 2020#
 #
@@ -2731,10 +2735,21 @@ XXXXXX26708 56.35 30.6167 97.0 Velikiye Luki, RU 2020
 # anno di inizio delle osservazioni: 1939
 XXXXXX16332 40.23864 18.13924 32.0 Lecce Galatina, IT 2020
 #
-XXXXXX27594 56.2667 44.0 161.1 Nizhniy Novgorod, RU 2020
+# wrong coords, disable
+#XXXXXX27594 56.2667 44.0 161.1 Nizhniy Novgorod, RU 2020
+# this looks more like it
+XXXXXX27594 55.814400 48.510310 Nizhniye Vyazovye, Republic of Tatarstan, Russia
+#
 XXXXXX61660 27.7 -8.1667 443.0 Tindouf, DZ 2020
 XXXXXX73033 32.8333 -117.1167 133.5 San Diego Miramar, US 2020
-XXXXXX73110 32.8333 -117.1167 133.5 San Diego Miramar, US 2020
+# next entry is DEAD WRONG
+# comment out for now
+#XXXXXX73110 32.8333 -117.1167 133.5 San Diego Miramar, US 2020
+#real san diego is listed above already: USM00072293  32.8333 -117.1167  133.5 CA SAN DIEGO/MIRAMAR              1946 2019  53225
+#
+# the station entry for 73110 and its coords and name are wrong
+# it should be 73110 halifax  44.63, -63.51
+XXXXXX73110  44.63 -63.51 20.0 Halifax Nova Scotia, Canada
 #
 XXXXXX20094 79.2788 101.624 21.0 Bolshevik Island, RU 2020
 #
