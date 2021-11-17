@@ -24,6 +24,8 @@ flights = {}
 missing = {}
 txtfrag = []
 
+# mah test
+
 # r = {'station_id': '03559', 'sonde_type': 141, 'sonde_frequency': 404500000.0, 'sonde_serial': 'S1830629'}
 def update(r):
     k = r['station_id']
