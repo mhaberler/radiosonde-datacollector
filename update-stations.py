@@ -74,32 +74,42 @@ def initialize_stations(txt_fn, json_fn, ms):
 
     stationdict = {}
     with open(txt_fn, "r") as csvfile:
+        lno = 0
         stndata = csv.reader(filter(lambda row: row[0]!='#', csvfile) , delimiter="\t")
+        
         for row in stndata:
-            m = re.match(
-                r"(?P<stn_wmoid>^\w+)\s+(?P<stn_lat>\S+)\s+(?P<stn_lon>\S+)\s+(?P<stn_altitude>\S+)(?P<stn_name>\D+)",
-                row[0],
-            )
-            fields = m.groupdict()
-            stn_wmoid = fields["stn_wmoid"][6:]
-            stn_name = fields["stn_name"].strip()
+            #print(row)
+            try:
+                lno += 1
+                #print(lno, len(row))
+                m = re.match(
+                    r"(?P<stn_wmoid>^\w+)\s+(?P<stn_lat>\S+)\s+(?P<stn_lon>\S+)\s+(?P<stn_altitude>\S+)(?P<stn_name>\D+)",
+                    row[0],
+                )
+                fields = m.groupdict()
+                stn_wmoid = fields["stn_wmoid"][6:]
+                stn_name = fields["stn_name"].strip()
 
-            if re.match(r"^[a-zA-Z]{2}\s", stn_name) and stn_name[:2] in US_STATES:
-                stn_name = stn_name[2:].strip().title() + ", " + stn_name[:2]
-            else:
-                stn_name = stn_name.title()
-            stn_name = fields["stn_name"].strip().title()
-            stn_lat = float(fields["stn_lat"])
-            stn_lon = float(fields["stn_lon"])
-            stn_altitude = float(fields["stn_altitude"])
+                if re.match(r"^[a-zA-Z]{2}\s", stn_name) and stn_name[:2] in US_STATES:
+                    stn_name = stn_name[2:].strip().title() + ", " + stn_name[:2]
+                else:
+                    stn_name = stn_name.title()
+                stn_name = fields["stn_name"].strip().title()
+                stn_lat = float(fields["stn_lat"])
+                stn_lon = float(fields["stn_lon"])
+                stn_altitude = float(fields["stn_altitude"])
 
-            if stn_altitude > -998.8:
-                stationdict[stn_wmoid] = {
-                    "name": stn_name,
-                    "lat": stn_lat,
-                    "lon": stn_lon,
-                    "elevation": stn_altitude,
-                }
+                if stn_altitude > -998.8:
+                    stationdict[stn_wmoid] = {
+                        "name": stn_name,
+                        "lat": stn_lat,
+                        "lon": stn_lon,
+                        "elevation": stn_altitude,
+                    }
+            except Exception:
+                logging.exception(f"file {txt_fn} line {lno}")
+                raise
+
     # insert ICAO id if present
     for id in stationdict.keys():
         try:
