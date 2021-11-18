@@ -135,7 +135,7 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                 properties["station_id"] = station
                 properties["id_type"] = "wmo"
             else:
-                if re.match(r"^\s{5}$", station):
+                if re.match(r"^\s+$", station):
                     # creative: an all-whitespace station id
                     # see https://static.mah.priv.at/cors/_20211117_220030.geojson
                     # for an example - Tunisia/Carthago
