@@ -84,11 +84,11 @@ def walkt_tree(toplevel, directory, pattern, after):
         entry = {"repfmt": typus, "syn_timestamp": int(ts)}
         gj = None
         if stid not in station_list:
-            if re.match(r"^\S{5}$", station):
+            if re.match(r"^\S{5}$", stid):
                 # creative: an all-whitespace station id
                 # see https://static.mah.priv.at/cors/_20211117_220030.geojson
                 # for an example - Tunisia/Carthago
-                logging.debug(f"skipping '{station=}' - all whitespace")
+                logging.debug(f"skipping '{stid=}' - all whitespace")
                 continue
 
             # maybe mobile. Check ascent for type
