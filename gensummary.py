@@ -27,13 +27,15 @@ txtfrag = []
 # mah test
 
 # r = {'station_id': '03559', 'sonde_type': 141, 'sonde_frequency': 404500000.0, 'sonde_serial': 'S1830629'}
+
+
 def update(r):
     k = r['station_id']
     if k not in flights:
         return
 
     f = flights[k]
-    for p in [x for x in ["sonde_type","sonde_frequency", "sonde_serial" ] if x in r]:
+    for p in [x for x in ["sonde_type", "sonde_frequency", "sonde_serial"] if x in r]:
         if p not in f.properties:
             f.properties.update({p: [r[p]]})
         else:
@@ -41,12 +43,13 @@ def update(r):
                 f.properties[p].append(r[p])
 
 
-query = [ "station_id","sonde_type","sonde_frequency", "sonde_serial" ]
+query = ["station_id", "sonde_type", "sonde_frequency", "sonde_serial"]
+
 
 def get_detail(path):
     gj = util.read_json_file(path, useBrotli=True, asGeojson=True)
     if 'sonde_serial' in gj.properties:
-        return { x: gj.properties[x] for x in query if x in gj.properties}
+        return {x: gj.properties[x] for x in query if x in gj.properties}
     return None
 
 
@@ -58,6 +61,7 @@ def add_station_detail(toplevel, directory, pattern):
         for x in r:
             if x:
                 update(x)
+
 
 def walkt_tree(toplevel, directory, pattern, after):
     nf = 0
@@ -80,6 +84,13 @@ def walkt_tree(toplevel, directory, pattern, after):
         entry = {"repfmt": typus, "syn_timestamp": int(ts)}
         gj = None
         if stid not in station_list:
+            if re.match(r"^\S{5}$", station):
+                # creative: an all-whitespace station id
+                # see https://static.mah.priv.at/cors/_20211117_220030.geojson
+                # for an example - Tunisia/Carthago
+                logging.debug(f"skipping '{station=}' - all whitespace")
+                continue
+
             # maybe mobile. Check ascent for type
             # example unregistered, but obviously fixed:
             # https://radiosonde.mah.priv.at/data-dev/gisc/08/383/08383_20210206_120000.geojson
@@ -121,7 +132,8 @@ def walkt_tree(toplevel, directory, pattern, after):
         else:
             if idtype == "unregistered":
                 if stid not in missing:
-                    locations = rg.search((st["lat"], st["lon"]), verbose=False)
+                    locations = rg.search(
+                        (st["lat"], st["lon"]), verbose=False)
                     if locations:
                         print(
                             stid,
@@ -143,7 +155,8 @@ def walkt_tree(toplevel, directory, pattern, after):
                     }
         # this needs fixing up for mobiles after sorting
         f.geometry = Point(
-            (round(st["lon"], 6), round(st["lat"], 6), round(st["elevation"], 1))
+            (round(st["lon"], 6), round(st["lat"], 6),
+             round(st["elevation"], 1))
         )
         nf += 1
     return (nf, 1, 1)
@@ -228,10 +241,12 @@ def main():
             cutoff_ts = util.now() - args.max_age * 24 * 3600
 
             global station_list
-            station_list = json.loads(util.read_file(args.station_json).decode())
+            station_list = json.loads(
+                util.read_file(args.station_json).decode())
             ntotal = 0
             for d in args.dirs:
-                nf, nu, nc = walkt_tree(d, pathlib.Path(d), "*.geojson.br", cutoff_ts)
+                nf, nu, nc = walkt_tree(
+                    d, pathlib.Path(d), "*.geojson.br", cutoff_ts)
                 ntotal = ntotal + nf
 
             fixup_flights(flights)

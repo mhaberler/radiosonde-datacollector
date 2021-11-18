@@ -135,6 +135,16 @@ def update_geojson_summary(args, stations, updated_stations, summary):
                 properties["station_id"] = station
                 properties["id_type"] = "wmo"
             else:
+                if re.match(r"^\S{5}$", station):
+                    # creative: an all-whitespace station id
+                    # see https://static.mah.priv.at/cors/_20211117_220030.geojson
+                    # for an example - Tunisia/Carthago
+                    try:
+                        badcoords = (asc["lon"], asc["lat"], asc["elevation"])
+                    except Exception:
+                        badcoords = "not available"
+                    logging.debug(f"skipping '{station=}' - all whitespace, {badcoords=}")
+                    continue
 
                 # unlisted station: anonymous + mobile
                 # take coords and station_id as name from ascent
