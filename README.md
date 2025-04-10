@@ -3,6 +3,12 @@
 
 # radiosonde-datacollector
 
+## Status
+The service described here has been deactivated. I have donated the code to [Windy](https://windy.com) and it runs there pretty much unchanged to power the Radiosonde View - give it [a try](https://www.windy.com/radiosonde/14015?46.073,14.502,5,p:radiosonde)!
+
+You can still download individual radiosonde ascents as GeoJSON from there - scroll down in the righthand radiosonde view to find the link
+
+
 ## What
 
 radiosonde-datacollector collates [radiosonde](https://en.wikipedia.org/wiki/Radiosonde) [soundings](https://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/atmosphere/radio-soundings.html)  from different sources, and converts them into a web-friendly format for further use by applications such as [radiosonde](https://radiosonde.mah.priv.at/dev/) and https://www.npmjs.com/package/windy-plugin-radiosonde. Typical use cases include [Skew-T](https://www.weather.gov/source/zhu/ZHU_Training_Page/convective_parameters/skewt/skewtinfo.html)  and [Stuve](http://www.csun.edu/~hmc60533/CSUN_103/weather_exercises/soundings/smog_and_inversions/Understanding%20Stuve_v3.htm) diagrams.
